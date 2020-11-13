@@ -6,7 +6,7 @@ x-php73:
     context: .
     dockerfile: ./php/php73-fpm/Dockerfile
     args:
-      MY_TZ: ${BUILD_TZ:-UTC}
+      MY_TZ: ${BUILD_TZ}
       VERSION: ${PHP73_VERSION}
   image: degobbis/php73-fpm-alpine:latest
 
@@ -16,7 +16,7 @@ x-php74:
     context: .
     dockerfile: ./php/php74-fpm/Dockerfile
     args:
-      MY_TZ: ${BUILD_TZ:-UTC}
+      MY_TZ: ${BUILD_TZ}
       VERSION: ${PHP74_VERSION}
   image: degobbis/php74-fpm-alpine:latest
 
@@ -26,7 +26,7 @@ x-php80:
     context: .
     dockerfile: ./php/php80-fpm/Dockerfile
     args:
-      MY_TZ: ${BUILD_TZ:-UTC}
+      MY_TZ: ${BUILD_TZ}
       VERSION: ${PHP80_VERSION}
   image: degobbis/php80-fpm-alpine:latest
 

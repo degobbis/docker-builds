@@ -6,7 +6,7 @@ x-php56:
     context: .
     dockerfile: ./php/php56-fpm/Dockerfile
     args:
-      MY_TZ: ${BUILD_TZ:-UTC}
+      MY_TZ: ${BUILD_TZ}
       VERSION: ${PHP56_VERSION}
   image: degobbis/php56-fpm-alpine:latest
 
