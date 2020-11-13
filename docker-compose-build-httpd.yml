@@ -5,7 +5,7 @@ x-apache24:
     context: .
     dockerfile: ./httpd/apache24/Dockerfile
     args:
-      MY_TZ: ${BUILD_TZ:-UTC}
+      MY_TZ: ${BUILD_TZ}
       VERSION: ${APACHE24_VERSION}
   image: degobbis/apache24-alpine:latest
 
