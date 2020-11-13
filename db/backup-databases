@@ -1,0 +1,22 @@
+#!/bin/sh
+
+echo
+echo "Datenbank-Sicherung gestartet."
+echo
+
+DATABASES_LIST=$(mysql -N -e 'show databases')
+
+for dbname in ${DATABASES_LIST};
+do
+	if [ ${dbname} = 'mysql' ] || [ ${dbname} = 'performance_schema' ] || [ ${dbname} = 'information_schema' ]; then
+		continue
+	fi
+	echo "${dbname} wird gesichert..."
+	mysqldump --databases --add-drop-database --complete-insert --routines --triggers --single-transaction ${dbname} > /docker-entrypoint-initdb.d/${dbname}.sql;
+done
+
+find /docker-entrypoint-initdb.d -type f -exec chown ${APP_USER_ID:-1000}:${APP_GROUP_ID:-1000} {} \;
+
+echo
+echo "Datenbank-Sicherung abgeschlossen."
+echo

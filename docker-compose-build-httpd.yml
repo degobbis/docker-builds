@@ -1,0 +1,17 @@
+version: '3'
+x-apache24:
+  &default-apache24
+  build:
+    context: .
+    dockerfile: ./httpd/apache24/Dockerfile
+    args:
+      MY_TZ: ${BUILD_TZ:-UTC}
+      VERSION: ${APACHE24_VERSION}
+  image: degobbis/apache24-alpine:latest
+
+services:
+  apache24-latest:
+    *default-apache24
+  apache24-version:
+    << : *default-apache24
+    image: degobbis/apache24-alpine:${APACHE24_VERSION}

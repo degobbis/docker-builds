@@ -1,0 +1,33 @@
+version: '3'
+x-mariadb104:
+  &default-mariadb104
+  build:
+    context: .
+    dockerfile: ./db/mariadb104/Dockerfile
+    args:
+      MY_TZ: ${BUILD_TZ:-UTC}
+      VERSION: ${MARIADB104_VERSION}
+  image: degobbis/mariadb104-alpine:latest
+
+x-mariadb105:
+  &default-mariadb105
+  build:
+    context: .
+    dockerfile: ./db/mariadb105/Dockerfile
+    args:
+      MY_TZ: ${BUILD_TZ:-UTC}
+      VERSION: ${MARIADB105_VERSION}
+  image: degobbis/mariadb105-alpine:latest
+
+services:
+  mariadb104-latest:
+    *default-mariadb104
+  mariadb104-version:
+    << : *default-mariadb104
+    image: degobbis/mariadb104-alpine:${MARIADB104_VERSION}
+
+  mariadb105-latest:
+    *default-mariadb105
+  mariadb105-version:
+    << : *default-mariadb105
+    image: degobbis/mariadb105-alpine:${MARIADB105_VERSION}
