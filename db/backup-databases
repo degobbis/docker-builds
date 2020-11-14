@@ -15,7 +15,7 @@ do
 	mysqldump --databases --add-drop-database --complete-insert --routines --triggers --single-transaction ${dbname} > /docker-entrypoint-initdb.d/${dbname}.sql;
 done
 
-find /docker-entrypoint-initdb.d -type f -exec chown ${APP_USER_ID:-1000}:${APP_GROUP_ID:-1000} {} \;
+chown -R ${APP_USER_ID:-1000}:${APP_GROUP_ID:-1000} /docker-entrypoint-initdb.d
 
 echo
 echo "Datenbank-Sicherung abgeschlossen."
