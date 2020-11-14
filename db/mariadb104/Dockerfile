@@ -27,12 +27,13 @@ RUN sed -Ei 's/^(bind-address|log)/#&/' /etc/my.cnf && \
 
 VOLUME /var/lib/mysql
 
-COPY ./db/docker-entrypoint /usr/local/bin/
+COPY ./db/docker-entrypoint /
 COPY ./db/backup-databases /usr/local/bin/
+
 RUN set -eux; \
-    find /usr/local/bin -type f -exec chmod +x {} \;
+    chmod +x /usr/local/bin/*
 
 STOPSIGNAL SIGQUIT
 EXPOSE 3306
-ENTRYPOINT ["docker-entrypoint"]
+ENTRYPOINT ["/docker-entrypoint"]
 CMD ["mysqld_safe"]

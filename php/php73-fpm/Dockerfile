@@ -21,11 +21,11 @@ RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/edge/co
 ENV LD_PRELOAD="/usr/lib/preloadable_libiconv.so php"
 
 COPY ./php/install-php-extensions /usr/local/bin/
-COPY ./shared/httpd-php-entrypoint /usr/local/bin/
+COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
 
 RUN set -eux; \
-    find /usr/local/bin -type f -exec chmod +x {} \;
+    chmod +x /usr/local/bin/*
 
 ENV PHPIZE_DEPS \
         autoconf \
@@ -64,5 +64,5 @@ WORKDIR "/srv/www"
 
 STOPSIGNAL SIGQUIT
 EXPOSE 9000
-ENTRYPOINT ["httpd-php-entrypoint"]
+ENTRYPOINT ["/httpd-php-entrypoint"]
 CMD ["/usr/local/sbin/php-fpm"]

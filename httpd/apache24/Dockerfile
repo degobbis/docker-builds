@@ -17,14 +17,14 @@ RUN set -eux; \
     rm -rf /var/cache/apk/*
 
 COPY ./httpd/apache24/config/httpd.conf /usr/local/apache2/conf/
-COPY ./shared/httpd-php-entrypoint /usr/local/bin/
+COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
 
 RUN set -eux; \
-    find /usr/local/bin -type f -exec chmod +x {} \;
+    chmod +x /usr/local/bin/*
 
 WORKDIR "/srv/www"
 
 STOPSIGNAL SIGWINCH
-ENTRYPOINT ["httpd-php-entrypoint"]
+ENTRYPOINT ["/httpd-php-entrypoint"]
 CMD ["httpd-foreground"]

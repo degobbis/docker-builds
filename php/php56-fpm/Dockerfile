@@ -17,11 +17,11 @@ RUN set -eux; \
     rm -rf /var/cache/apk/*
 
 COPY ./php/install-php-extensions /usr/local/bin/
-COPY ./shared/httpd-php-entrypoint /usr/local/bin/
+COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
 
 RUN set -eux; \
-    find /usr/local/bin -type f -exec chmod +x {} \;
+    chmod +x /usr/local/bin/*
 
 ENV PHPIZE_DEPS \
         autoconf \
@@ -60,5 +60,5 @@ WORKDIR "/srv/www"
 
 STOPSIGNAL SIGQUIT
 EXPOSE 9000
-ENTRYPOINT ["httpd-php-entrypoint"]
+ENTRYPOINT ["/httpd-php-entrypoint"]
 CMD ["/usr/local/sbin/php-fpm"]
