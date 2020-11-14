@@ -17,7 +17,7 @@ help:
 .PHONY: build-all-httpd build-apache24 build-all-php build-php73 build-php74 build-php80 build-all-php-eol build-php56 build-all-db build-mariadb104 build-mariadb105
 
 
-build-all: build-all-httpd build-all-php build-all-php-eol build-all-db ## Build all latest images and tag as :latest (includes build-all-httpd build-all-php build-all-php-eol build-all-db)
+build-all: build-all-httpd build-all-db build-all-php build-all-php-eol ## Build all latest images and tag as :latest (includes build-all-httpd build-all-php build-all-php-eol build-all-db)
 
 
 build-all-httpd: build-apache24 ## Build all latest httpd images and tag as :latest
@@ -50,4 +50,4 @@ build-mariadb104: ## Build latest MariaDB 10.4 image and tag as :latest
 	$(DOCKER_BUILD_DB_MARIADB104)
 
 build-mariadb105: ## Build latest MariaDB 10.5 image and tag as :latest
-	$(DOCKER_BUILD_DB_MARIADB104)
+	$(DOCKER_BUILD_DB_MARIADB105)
