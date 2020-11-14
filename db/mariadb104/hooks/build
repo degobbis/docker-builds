@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+# hooks/build
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+if [ "$COMMIT_MSG" != "" ]; then
+	GIT_LOG="$(git log -1 | grep -i -E 'mariadb104|mariadb10.4|mariadb 10.4')"
+
+	if [ -z "$GIT_LOG" ]; then
+		echo "[***] Aborted: Nothing to do for MariaDB 10.4"
+		exit 1
+	fi
+fi
+
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+if [ -z "$BUILD_CODE" ]; then
+	## Build local
+	ROOT_DIR="."
+	DOCKER_REPO="degobbis/mariadb104-alpine"
+	DOCKER_TAG="latest"
+	IMAGE_NAME="$DOCKER_REPO:$DOCKER_TAG"
+	SOURCE_REPOSITORY_URL="https://github.com/degobbis/docker-builds"
+else
+	## Build on Dockerhub
+	ROOT_DIR="/src/$BUILD_CODE"
+fi
+
+DOCKERFILE_PATH="$ROOT_DIR/db/mariadb104/Dockerfile"
+ENV_FILE="$ROOT_DIR/.env"
+
+if [ ! -e "$ENV_FILE" ]; then
+	echo "$ENV_FILE not found!"
+	exit 1
+fi
+
+echo "[***] Build hook starting..."
+echo "[---] Load: $ENV_FILE"
+source $ENV_FILE
+
+SET_DOCUMENTATION=""
+DOCUMENTATION_URL="$SOURCE_REPOSITORY_URL/db/mariadb104/README.md"
+DOCUMENTATION_EXISTS="$(curl --silent --head --write-out %{http_code} $DOCUMENTATION_URL --output /dev/null)"
+
+if [ "$DOCUMENTATION_EXISTS" = "200" ]; then
+	echo "[---] Dokumentation exists on: $DOCUMENTATION_URL"
+	SET_DOCUMENTATION="--build-arg DOCUMENTATION=\"$DOCUMENTATION_URL\""
+fi
+
+echo "[---] BUILD_DATE: $BUILD_DATE"
+echo "[---] DOCKERFILE_PATH: $DOCKERFILE_PATH"
+echo "[---] DOCKER_REPO: $DOCKER_REPO"
+echo "[---] DOCKER_TAG: $DOCKER_TAG"
+echo "[---] IMAGE_NAME: $IMAGE_NAME"
+echo "[---] ENV_FILE: $ENV_FILE"
+echo "[---] BUILD_TZ: $BUILD_TZ"
+echo "[---] BUILD_DATE: $BUILD_DATE"
+echo "[---] MARIADB104_VERSION: $MARIADB104_VERSION"
+
+if [ -z "$MARIADB104_VERSION" ]; then
+	echo "MARIADB104_VERSION is empty!"
+	exit 1
+fi
+
+# exit 1
+
+## Build the prime image.
+docker build \
+	--file "$DOCKERFILE_PATH" \
+	--build-arg MY_TZ="$BUILD_TZ" \
+	--build-arg BUILD_DATE="$BUILD_DATE" \
+	--build-arg VERSION="$MARIADB104_VERSION" \
+	--build-arg MAINTAINER="$MAINTAINER" \
+	$SET_DOCUMENTATION \
+	-t $IMAGE_NAME \
+	$ROOT_DIR
+
+if [ ! -z "$BUILD_CODE" ]; then
+	## Push the image so manifest-tool can find it.
+	echo "[---] Push the image so manifest-tool can find it."
+	docker push $IMAGE_NAME
+
+	## Tag the image with version.
+	echo "[---] Adding tag $MARIADB104_VERSION to latest"
+	docker tag $IMAGE_NAME $DOCKER_REPO:$MARIADB104_VERSION
+
+	## Push the image with version.
+	echo "[---] Push the image with version $MARIADB104_VERSION."
+	docker push $DOCKER_REPO:$MARIADB104_VERSION
+fi
+
+echo "[***] ...build hook complete."
