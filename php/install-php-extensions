@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # This script wraps docker-php-ext-install, properly configuring the system.
 #

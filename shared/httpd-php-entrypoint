@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 # Set user defined timezone
 ln -sf /usr/share/zoneinfo/${TZ:-UTC} /etc/localtime

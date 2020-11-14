@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env sh
 
 APP_USER=virtual
 APP_GROUP=virtual

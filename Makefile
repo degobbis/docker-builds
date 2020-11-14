@@ -1,3 +1,4 @@
+#!/usr/bin/env make
 DOCKER_COMPOSE_BUILD_DIR=.
 DOCKER_COMPOSE_BUILD_HTTPD_FILE=-f $(DOCKER_COMPOSE_BUILD_DIR)/docker-compose-build-httpd.yml
 DOCKER_COMPOSE_BUILD_PHP_FILE=-f $(DOCKER_COMPOSE_BUILD_DIR)/docker-compose-build-php.yml
