@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# hooks/pre_build
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+echo "[***] Pre_build hook starting..."
+if [ "$COMMIT_MSG" != "" ]; then
+	GIT_LOG="$(git show -s $SOURCE_COMMIT | grep -i -E 'mariadb104|mariadb10.4|mariadb 10.4')"
+
+	if [ -z "$GIT_LOG" ]; then
+		echo "[***] Aborted: Nothing to do for MariaDB 10.4!"
+		exit 1
+	fi
+fi
+
+echo "[***] Found keyword for MariaDB 10.4: Continue with build..."
