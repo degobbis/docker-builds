@@ -69,6 +69,8 @@ RUN install-php-extensions \
         xsl \
         zip
 
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
+
 WORKDIR "/srv/www"
 
 STOPSIGNAL "SIGQUIT"
