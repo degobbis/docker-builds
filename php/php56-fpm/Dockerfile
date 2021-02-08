@@ -24,6 +24,10 @@ RUN set -eux; \
     ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
     rm -rf /var/cache/apk/*
 
+# fix work iconv library with alphine
+RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ --allow-untrusted gnu-libiconv
+ENV LD_PRELOAD="/usr/lib/preloadable_libiconv.so php"
+
 COPY ./php/install-php-extensions /usr/local/bin/
 COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
