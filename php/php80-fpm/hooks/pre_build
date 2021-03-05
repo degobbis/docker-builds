@@ -4,7 +4,7 @@
 
 echo "[***] Pre_build hook starting..."
 if [ "$COMMIT_MSG" != "" ]; then
-	GIT_LOG="$(git show -s $SOURCE_COMMIT | grep -i -E 'php80|php8.0|php 8.0')"
+	GIT_LOG="$(git show -s $SOURCE_COMMIT | grep -i -E 'php80|php8\.0|php 8\.0')"
 
 	if [ -z "$GIT_LOG" ]; then
 		echo "[***] Aborted: Nothing to do for PHP8.0!"

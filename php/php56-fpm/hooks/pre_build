@@ -4,7 +4,7 @@
 
 echo "[***] Pre_build hook starting..."
 if [ "$COMMIT_MSG" != "" ]; then
-	GIT_LOG="$(git show -s $SOURCE_COMMIT | grep -i -E 'php56|php5.6|php 5.6')"
+	GIT_LOG="$(git show -s $SOURCE_COMMIT | grep -i -E 'php56|php5\.6|php 5\.6')"
 
 	if [ -z "$GIT_LOG" ]; then
 		echo "[***] Aborted: Nothing to do for PHP5.6!"
