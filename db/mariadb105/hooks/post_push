@@ -17,16 +17,16 @@ echo "[---] Load: $ENV_FILE"
 source $ENV_FILE
 
 if [ -z "$MARIADB105_VERSION" ]; then
-	echo "$MARIADB104_VERSION is empty!"
+	echo "$MARIADB105_VERSION is empty!"
 	exit 1
 fi
 
 ## Tag the image with version.
-echo "[---] Adding tag $MARIADB104_VERSION to latest"
-docker tag $IMAGE_NAME $DOCKER_REPO:$MARIADB104_VERSION
+echo "[---] Adding tag $MARIADB105_VERSION to latest"
+docker tag $IMAGE_NAME $DOCKER_REPO:$MARIADB105_VERSION
 
 ## Push the image with version.
-echo "[---] Push the image with version $MARIADB104_VERSION."
-docker push $DOCKER_REPO:$MARIADB104_VERSION
+echo "[---] Push the image with version $MARIADB105_VERSION."
+docker push $DOCKER_REPO:$MARIADB105_VERSION
 
 echo "[***] ...post_push hook complete."
