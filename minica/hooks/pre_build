@@ -4,7 +4,7 @@
 
 echo "[***] Pre_build hook starting..."
 if [ "$COMMIT_MSG" != "" ]; then
-	GIT_LOG="$(git show -s $SOURCE_COMMIT | grep -i -E 'minica')"
+	GIT_LOG="$(git show -s $SOURCE_COMMIT | grep -i -E 'minica|update all images')"
 
 	if [ -z "$GIT_LOG" ]; then
 		echo "[***] Aborted: Nothing to do for Minica!"

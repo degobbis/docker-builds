@@ -27,6 +27,7 @@ if [ -d "${PHP_INI_DIR}" ]; then
 	else
 		echo "xdebug.client_host=${XDEBUG_REMOTE_HOST:-$(ip route | awk '/default/ { print $3 }')}" >${PHP_INI_DIR}/conf.d/user-xdebug-remote-host.ini
 	fi
+
 fi
 
 exec "$@"
