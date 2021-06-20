@@ -1,5 +1,54 @@
 #!/usr/bin/env sh
 
+# Usage of tput
+#
+# tput bold # Select bold mode
+# tput dim  # Select dim (half-bright) mode
+# tput smul # Enable underline mode
+# tput rmul # Disable underline mode
+# tput rev  # Turn on reverse video mode
+# tput smso # Enter standout (bold) mode
+# tput rmso # Exit standout mode
+#
+# tput setab [1-7] # Set the background colour using ANSI escape
+# tput setaf [1-7] # Set the foreground colour using ANSI escape
+# tput sgr0        # Reset text format to the terminal's default
+# tput bel         # Play a bell
+#
+# Num  Colour
+# 0    black
+# 1    red
+# 2    green
+# 3    yellow
+# 4    blue
+# 5    magenta
+# 6    cyan
+# 7    white
+
+error() {
+    echo && echo "$(tput setaf 1; tput bold) ERROR:" "$@" "$(tput sgr 0)" && tput bel
+}
+
+warn() {
+    echo "$(tput setaf 3) ->" "$@" "$(tput sgr 0)"
+}
+
+info() {
+    echo "$(tput sgr 0) ->" "$@"
+}
+
+success() {
+    echo && echo "$(tput setaf 2) ->" "$@" "$(tput sgr 0)"
+}
+
+headline() {
+    [ "$DEBUG" -eq 1 ] && echo && echo "$(tput setaf 3) --" "$@" "--$(tput sgr 0)"
+}
+
+log() {
+    [ "$DEBUG" -eq 1 ] && echo "$(tput setaf 7) ->" "$@" "$(tput sgr 0)"
+}
+
 APP_USER=virtual
 APP_GROUP=virtual
 APP_USER_ID=$1

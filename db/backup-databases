@@ -4,19 +4,41 @@ echo
 echo "Datenbank-Sicherung gestartet."
 echo
 
-DATABASES_LIST=$(mysql -N -e 'show databases')
+FULL_BACKUP=1
+
+# If no backup folder is specified, we set it as date.
+DATABASE_BACKUP_FOLDER=$(basename ${BACKUP_FOLDER:-$(date +%Y-%m-%d)})
+
+# If the backup folder don't exists, we create it.
+[ ! -d "/docker-entrypoint-initdb.d/$DATABASE_BACKUP_FOLDER" ] && mkdir -p /docker-entrypoint-initdb.d/$DATABASE_BACKUP_FOLDER
+
+# Formating the list of databases to be backed up, if not empty.
+[ ! -z "$BACKUP_DB" ] && BACKUP_DB_LIST=$(echo "$BACKUP_DB" | sed "s/, / /g" | sed "s/,/ /g") && FULL_BACKUP=0
+
+# If no databases to back up are specified, all databases will be added to the list.
+DATABASES_LIST=${BACKUP_DB_LIST:-$(mysql -N -e 'show databases')}
+
 
 for dbname in ${DATABASES_LIST};
 do
-	if [ ${dbname} = 'mysql' ] || [ ${dbname} = 'performance_schema' ] || [ ${dbname} = 'information_schema' ]; then
-		continue
-	fi
-	echo "${dbname} wird gesichert..."
-	mysqldump --databases --add-drop-database --complete-insert --routines --triggers --single-transaction ${dbname} > /docker-entrypoint-initdb.d/${dbname}.sql;
+    if [ ${dbname} = 'mysql' ] || [ ${dbname} = 'performance_schema' ] || [ ${dbname} = 'information_schema' ]; then
+        continue
+    fi
+
+    if [ "$FULL_BACKUP" -eq 0 ]; then
+        DATABASES_LIST=$(mysql -N -e 'use joomla_j3de'>/dev/null 2>&1 && echo "Exists." || echo " Not exists!")
+    fi
+
+    echo "${dbname} wird nach ${DATABASE_BACKUP_FOLDER} gesichert..."
+
+    mysqldump --databases --add-drop-database --complete-insert --routines --triggers --single-transaction ${dbname} > /docker-entrypoint-initdb.d/${DATABASE_BACKUP_FOLDER}/${dbname}.sql;
+    [ "$?" -eq 1 ] && error "The parameter" "$@" "is not set correctly!" && warn "For help call '$0 -h|--help'." && exit 1
+
+    [ "${FULL_BACKUP}" -eq 1 ] && cp /docker-entrypoint-initdb.d/${DATABASE_BACKUP_FOLDER}/${dbname}.sql /docker-entrypoint-initdb.d/${dbname}.sql;
 done
 
 chown -R ${APP_USER_ID:-1000}:${APP_GROUP_ID:-1000} /docker-entrypoint-initdb.d
 
 echo
-echo "Datenbank-Sicherung abgeschlossen."
+[] && echo "$(tput setaf 3)Datenbank-Sicherung abgeschlossen.$(tput sgr 0)" ||  echo "$(tput setaf 3)Datenbank-Sicherung abgeschlossen.$(tput sgr 0)"
 echo

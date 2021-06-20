@@ -20,7 +20,7 @@ COPY ./shared/aliases.sh /etc/profile.d/
 
 RUN set -eux; \
     apk upgrade --update; \
-    apk add --no-cache tzdata shadow; \
+    apk add --no-cache tzdata shadow git; \
     ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
     rm -rf /var/cache/apk/*
 
