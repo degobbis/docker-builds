@@ -1,44 +1,71 @@
 #!/usr/bin/env sh
 
+# Variables passed by -e in docker exec call
+#
+# SAVE_DB="<db-name> <db-name>"
+# To backup a single database, otherwise all databases are backed up
+#
+# ARCHIVE=(0|1)
+# To (de)activate the additional archiving of the databases.
+# Default = 0
+#
+# ARCHIVE_FOLDER=<folder-name>
+# To define the folder name where the databases are archives into, if enabled.
+# Default is the actual date in this format: yyyy-mm-dd
+
 echo
-echo "Datenbank-Sicherung gestartet."
-echo
-
-FULL_BACKUP=1
-
-# If no backup folder is specified, we set it as date.
-DATABASE_BACKUP_FOLDER=$(basename ${BACKUP_FOLDER:-$(date +%Y-%m-%d)})
-
-# If the backup folder don't exists, we create it.
-[ ! -d "/docker-entrypoint-initdb.d/$DATABASE_BACKUP_FOLDER" ] && mkdir -p /docker-entrypoint-initdb.d/$DATABASE_BACKUP_FOLDER
-
-# Formating the list of databases to be backed up, if not empty.
-[ ! -z "$BACKUP_DB" ] && BACKUP_DB_LIST=$(echo "$BACKUP_DB" | sed "s/, / /g" | sed "s/,/ /g") && FULL_BACKUP=0
+echo "Selected settings:"
+if [ ! -z "$SAVE_DB" ]; then
+    echo "-> Databases to save:" "$SAVE_DB"
+    # Formating the list of databases to be backed up, if not empty.
+    BACKUP_DB_LIST=$(echo "$SAVE_DB" | sed "s/, / /g" | sed "s/,/ /g")
+    SELECTED_SAVE=1
+else
+    echo "-> Save all databases."
+fi
 
 # If no databases to back up are specified, all databases will be added to the list.
 DATABASES_LIST=${BACKUP_DB_LIST:-$(mysql -N -e 'show databases')}
 
+# Additional archiving of the databases.
+ARCHIVE_DB=${ARCHIVE:-0}
 
-for dbname in ${DATABASES_LIST};
+# If no archive folder is specified, we set it as date.
+DATABASE_ARCHIVE_FOLDER=$(basename ${ARCHIVE_FOLDER:-$(date +%Y-%m-%d)})
+
+if [ "$ARCHIVE_DB" -eq 1 ]; then
+    echo "-> Archive the databases also into the subfolder:" "$DATABASE_ARCHIVE_FOLDER"
+
+    # If the backup folder don't exists, we create it.
+    [ ! -d "/docker-entrypoint-initdb.d/$DATABASE_ARCHIVE_FOLDER" ] && mkdir -p /docker-entrypoint-initdb.d/$DATABASE_ARCHIVE_FOLDER
+else
+    echo "-> No additional archiving of databases."
+fi
+
+echo
+echo "-- Start saving databases. --"
+echo
+
+for dbname in $DATABASES_LIST;
 do
-    if [ ${dbname} = 'mysql' ] || [ ${dbname} = 'performance_schema' ] || [ ${dbname} = 'information_schema' ]; then
+    if [ $dbname = 'mysql' ] || [ $dbname = 'performance_schema' ] || [ $dbname = 'information_schema' ]; then
         continue
     fi
 
-    if [ "$FULL_BACKUP" -eq 0 ]; then
-        DATABASES_LIST=$(mysql -N -e 'use joomla_j3de'>/dev/null 2>&1 && echo "Exists." || echo " Not exists!")
+    if [ "$SELECTED_SAVE" -eq 1 ]; then
+        DB_EXISTS=$(mysql -N -e "use $dbname">/dev/null 2>&1 && echo 1 || echo 0)
+        [ "$DB_EXISTS" -eq 0 ] && echo "ERROR: Database '$dbname' not found!" && continue
     fi
 
-    echo "${dbname} wird nach ${DATABASE_BACKUP_FOLDER} gesichert..."
+    # Save database
+    mysqldump --databases --add-drop-database --complete-insert --routines --triggers --single-transaction $dbname > /docker-entrypoint-initdb.d/$dbname.sql && echo "-> Database '$dbname' saved."
 
-    mysqldump --databases --add-drop-database --complete-insert --routines --triggers --single-transaction ${dbname} > /docker-entrypoint-initdb.d/${DATABASE_BACKUP_FOLDER}/${dbname}.sql;
-    [ "$?" -eq 1 ] && error "The parameter" "$@" "is not set correctly!" && warn "For help call '$0 -h|--help'." && exit 1
-
-    [ "${FULL_BACKUP}" -eq 1 ] && cp /docker-entrypoint-initdb.d/${DATABASE_BACKUP_FOLDER}/${dbname}.sql /docker-entrypoint-initdb.d/${dbname}.sql;
+    # Archive a copy if enabled
+    [ "$ARCHIVE_DB" -eq 1 ] && cp /docker-entrypoint-initdb.d/${dbname}.sql /docker-entrypoint-initdb.d/$DATABASE_ARCHIVE_FOLDER/${dbname}.sql && echo "-> Database '$dbname' archived into '$DATABASE_ARCHIVE_FOLDER'."
 done
 
 chown -R ${APP_USER_ID:-1000}:${APP_GROUP_ID:-1000} /docker-entrypoint-initdb.d
 
 echo
-[] && echo "$(tput setaf 3)Datenbank-Sicherung abgeschlossen.$(tput sgr 0)" ||  echo "$(tput setaf 3)Datenbank-Sicherung abgeschlossen.$(tput sgr 0)"
+echo "-- Saving the databases finished. --"
 echo
