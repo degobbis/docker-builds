@@ -13,6 +13,8 @@
 # To define the folder name where the databases are archives into, if enabled.
 # Default is the actual date in this format: yyyy-mm-dd
 
+SELECTED_SAVE=1
+
 echo
 echo "Selected settings:"
 if [ ! -z "$SAVE_DB" ]; then
