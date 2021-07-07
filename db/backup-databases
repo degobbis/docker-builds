@@ -50,7 +50,7 @@ echo
 
 for dbname in $DATABASES_LIST;
 do
-    if [ $dbname = 'mysql' ] || [ $dbname = 'performance_schema' ] || [ $dbname = 'information_schema' ]; then
+    if [ $dbname = 'mysql' ] || [ $dbname = 'sys' ] || [ $dbname = 'performance_schema' ] || [ $dbname = 'information_schema' ]; then
         continue
     fi
 
