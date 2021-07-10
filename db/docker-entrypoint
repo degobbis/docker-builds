@@ -158,15 +158,9 @@ SQL
   fi
 
   echo
-  for f in /docker-entrypoint-initdb.d/*; do
-    case "$f" in
-      *.sh)     echo "$0: running $f"; . "$f" ;;
-      *.sql)    echo "$0: running $f"; execute < "$f"; echo ;;
-      *.sql.gz) echo "$0: running $f"; gunzip -c "$f" | execute; echo ;;
-      *)        echo "$0: ignoring $f" ;;
-    esac
-    echo
-  done
+  [ "${INIT_DB_BY_SCRIPT:-0}" -eq 0 ] && . /usr/local/bin/restore-databases
+
+  echo "Restart MySQL ..."
 
   if ! mysqladmin -uroot --password="$MYSQL_PWD" shutdown; then
     echo >&2 'Shutdown failed'
