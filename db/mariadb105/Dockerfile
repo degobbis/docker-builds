@@ -1,4 +1,4 @@
-FROM alpine:edge
+FROM alpine:3.14
 
 ARG VERSION
 ARG MAINTAINER
