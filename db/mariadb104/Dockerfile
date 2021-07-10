@@ -37,6 +37,8 @@ VOLUME /var/lib/mysql
 
 COPY ./db/docker-entrypoint /
 COPY ./db/backup-databases /usr/local/bin/
+COPY ./db/restore-databases /usr/local/bin/
+COPY ./shared/create_user /usr/local/bin/
 
 RUN set -eux; \
     chmod +x /docker-entrypoint && \
