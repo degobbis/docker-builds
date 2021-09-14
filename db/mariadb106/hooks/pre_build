@@ -12,4 +12,4 @@ if [ "$COMMIT_MSG" != "" ]; then
 	fi
 fi
 
-echo "[***] Found keyword for MariaDB 10.5: Continue with build..."
+echo "[***] Found keyword for MariaDB 10.6: Continue with build..."

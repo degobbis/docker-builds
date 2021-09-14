@@ -9,7 +9,7 @@ BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 if [ -z "$BUILD_CODE" ]; then
 	## Build local
 	ROOT_DIR="."
-	DOCKER_REPO="degobbis/mariadb105-alpine"
+	DOCKER_REPO="degobbis/mariadb106-alpine"
 	DOCKER_TAG="latest"
 	IMAGE_NAME="$DOCKER_REPO:$DOCKER_TAG"
 	SOURCE_REPOSITORY_URL="https://github.com/degobbis/docker-builds"
@@ -18,7 +18,7 @@ else
 	ROOT_DIR="/src/$BUILD_CODE"
 fi
 
-DOCKERFILE_PATH="$ROOT_DIR/db/mariadb105/Dockerfile"
+DOCKERFILE_PATH="$ROOT_DIR/db/mariadb106/Dockerfile"
 ENV_FILE="$ROOT_DIR/.env"
 
 if [ ! -e "$ENV_FILE" ]; then
@@ -30,7 +30,7 @@ echo "[---] Load: $ENV_FILE"
 source $ENV_FILE
 
 SET_DOCUMENTATION=""
-DOCUMENTATION_URL="$SOURCE_REPOSITORY_URL/db/mariadb105/README.md"
+DOCUMENTATION_URL="$SOURCE_REPOSITORY_URL/db/mariadb106/README.md"
 DOCUMENTATION_EXISTS="$(curl --silent --head --write-out %{http_code} $DOCUMENTATION_URL --output /dev/null)"
 
 if [ "$DOCUMENTATION_EXISTS" = "200" ]; then
