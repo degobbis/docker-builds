@@ -18,7 +18,7 @@ LABEL org.opencontainers.image.authors="$MAINTAINER" \
 
 COPY ./shared/aliases.sh /etc/profile.d/
 
-RUN set -eux; \
+RUN set -eu; \
     apk upgrade --update; \
     apk add --no-cache tzdata shadow; \
     ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
@@ -32,7 +32,7 @@ COPY ./php/install-php-extensions /usr/local/bin/
 COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
 
-RUN set -eux; \
+RUN set -eu; \
     chmod +x /httpd-php-entrypoint && \
     chmod +x /usr/local/bin/*
 

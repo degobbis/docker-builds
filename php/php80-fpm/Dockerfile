@@ -18,11 +18,10 @@ LABEL org.opencontainers.image.authors="$MAINTAINER" \
 
 COPY ./shared/aliases.sh /etc/profile.d/
 
-RUN set -eux; \
+RUN set -eu; \
+    apk add --no-cache tzdata shadow git ca-certificates; \
     apk upgrade --update; \
-    apk add --no-cache tzdata shadow git; \
-    ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
-    rm -rf /var/cache/apk/*
+    ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime
 
 # fix work iconv library with alphine
 RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ --allow-untrusted gnu-libiconv
@@ -32,7 +31,7 @@ COPY ./php/install-php-extensions /usr/local/bin/
 COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
 
-RUN set -eux; \
+RUN set -eu; \
     chmod +x /httpd-php-entrypoint && \
     chmod +x /usr/local/bin/*
 
@@ -69,7 +68,9 @@ RUN install-php-extensions \
         xsl \
         zip
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer; \
+    rm -rf /var/cache/apk/*
+
 
 WORKDIR "/srv/www"
 

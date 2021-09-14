@@ -15,9 +15,9 @@ LABEL org.opencontainers.image.authors="$MAINTAINER" \
 
 COPY ./shared/aliases.sh /etc/profile.d/
 
-RUN set -eux; \
+RUN set -eu; \
+    apk add --no-cache ca-certificates tzdata shadow mariadb mariadb-client mariadb-server-utils; \
     apk upgrade --update; \
-    apk add --no-cache tzdata shadow mariadb mariadb-client mariadb-server-utils; \
     ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
     mkdir /docker-entrypoint-initdb.d; \
     rm -rf /var/cache/apk/*
@@ -40,7 +40,7 @@ COPY ./db/backup-databases /usr/local/bin/
 COPY ./db/restore-databases /usr/local/bin/
 COPY ./shared/create_user /usr/local/bin/
 
-RUN set -eux; \
+RUN set -eu; \
     chmod +x /docker-entrypoint && \
     chmod +x /usr/local/bin/*
 

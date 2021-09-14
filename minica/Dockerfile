@@ -18,7 +18,7 @@ LABEL org.opencontainers.image.authors="$MAINTAINER" \
       org.opencontainers.image.documentation="$DOCUMENTATION" \
       org.opencontainers.image.version="$VERSION"
 
-RUN set -eux; \
+RUN set -eu; \
     chmod +x /usr/local/bin/*
 
 WORKDIR /certs
