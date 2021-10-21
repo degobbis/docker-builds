@@ -18,7 +18,8 @@ else
 	ROOT_DIR="/src/$BUILD_CODE"
 fi
 
-DOCKERFILE_PATH="$ROOT_DIR/minica/Dockerfile"
+DOCKERFILE_ROOT="$ROOT_DIR/minica"
+DOCKERFILE_PATH="$DOCKERFILE_ROOT/Dockerfile"
 ENV_FILE="$ROOT_DIR/.env"
 
 if [ ! -e "$ENV_FILE" ]; then
@@ -38,7 +39,6 @@ if [ "$DOCUMENTATION_EXISTS" = "200" ]; then
 	SET_DOCUMENTATION="--build-arg DOCUMENTATION=\"$DOCUMENTATION_URL\""
 fi
 
-echo "[---] BUILD_DATE: $BUILD_DATE"
 echo "[---] DOCKERFILE_PATH: $DOCKERFILE_PATH"
 echo "[---] DOCKER_REPO: $DOCKER_REPO"
 echo "[---] DOCKER_TAG: $DOCKER_TAG"
@@ -65,3 +65,8 @@ docker build \
 	$ROOT_DIR
 
 echo "[***] ...build hook complete."
+
+## Load the post push script, if local build
+if [ -z "$BUILD_CODE" ]; then
+	source $DOCKERFILE_ROOT/hooks/post_push
+fi
