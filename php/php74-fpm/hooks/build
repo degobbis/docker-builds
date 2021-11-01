@@ -67,6 +67,6 @@ docker build \
 echo "[***] ...build hook complete."
 
 ## Load the post push script, if local build
-if [ -z "$BUILD_CODE" ]; then
+if [ -z "$BUILD_CODE" ] && [ "$PUSH_TO_DOCKER" -eq 1 ]; then
 	source $DOCKERFILE_ROOT/hooks/post_push
 fi
