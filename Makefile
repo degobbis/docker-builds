@@ -20,11 +20,7 @@ help:
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z0-9_-]+:.*?##/ { printf "  \033[36m%-27s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
 
-.PHONY: test build-minica build-all-httpd build-apache24 build-all-php build-php73 build-php74 build-php80 build-all-php-eol build-php56 build-all-db build-mariadb104 build-mariadb105 build-mariadb106
-
-
-test:
-	@echo "$(PUSH_TO_DOCKER)"
+.PHONY: build-minica build-all-httpd build-apache24 build-all-php build-php73 build-php74 build-php80 build-all-php-eol build-php56 build-all-db build-mariadb104 build-mariadb105 build-mariadb106
 
 
 build-all: build-all-httpd build-all-db build-all-php build-all-php-eol ## Build all latest images and tag as :latest (includes build-all-httpd build-all-php build-all-php-eol build-all-db)
