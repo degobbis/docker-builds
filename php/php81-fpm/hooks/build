@@ -1,0 +1,72 @@
+#!/usr/bin/env bash
+# hooks/build
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+echo "[***] Build hook starting..."
+
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+if [ -z "$BUILD_CODE" ]; then
+	## Build local
+	ROOT_DIR="."
+	DOCKER_REPO="degobbis/php81-fpm-alpine"
+	DOCKER_TAG="latest"
+	IMAGE_NAME="$DOCKER_REPO:$DOCKER_TAG"
+	SOURCE_REPOSITORY_URL="https://github.com/degobbis/docker-builds"
+else
+	## Build on Dockerhub
+	ROOT_DIR="/src/$BUILD_CODE"
+fi
+
+DOCKERFILE_ROOT="$ROOT_DIR/php/php81-fpm"
+DOCKERFILE_PATH="$DOCKERFILE_ROOT/Dockerfile"
+ENV_FILE="$ROOT_DIR/.env"
+
+if [ ! -e "$ENV_FILE" ]; then
+	echo "$ENV_FILE not found!"
+	exit 1
+fi
+
+echo "[---] Load: $ENV_FILE"
+source $ENV_FILE
+
+SET_DOCUMENTATION=""
+DOCUMENTATION_URL="$SOURCE_REPOSITORY_URL/php/php81-fpm/README.md"
+DOCUMENTATION_EXISTS="$(curl --silent --head --write-out %{http_code} $DOCUMENTATION_URL --output /dev/null)"
+
+if [ "$DOCUMENTATION_EXISTS" = "200" ]; then
+	echo "[---] Dokumentation exists on: $DOCUMENTATION_URL"
+	SET_DOCUMENTATION="--build-arg DOCUMENTATION=\"$DOCUMENTATION_URL\""
+fi
+
+echo "[---] DOCKERFILE_PATH: $DOCKERFILE_PATH"
+echo "[---] DOCKER_REPO: $DOCKER_REPO"
+echo "[---] DOCKER_TAG: $DOCKER_TAG"
+echo "[---] IMAGE_NAME: $IMAGE_NAME"
+echo "[---] ENV_FILE: $ENV_FILE"
+echo "[---] BUILD_TZ: $BUILD_TZ"
+echo "[---] BUILD_DATE: $BUILD_DATE"
+echo "[---] PHP81_VERSION: $PHP81_VERSION"
+
+if [ -z "$PHP81_VERSION" ]; then
+	echo "PHP81_VERSION is empty!"
+	exit 1
+fi
+
+## Build the prime image.
+docker build \
+	--file "$DOCKERFILE_PATH" \
+	--build-arg MY_TZ="$BUILD_TZ" \
+	--build-arg BUILD_DATE="$BUILD_DATE" \
+	--build-arg VERSION="$PHP81_VERSION" \
+	--build-arg MAINTAINER="$MAINTAINER" \
+	$SET_DOCUMENTATION \
+	-t $IMAGE_NAME \
+	$ROOT_DIR
+
+echo "[***] ...build hook complete."
+
+## Load the post push script, if local build
+if [ -z "$BUILD_CODE" ] && [ "$PUSH_TO_DOCKER" -eq 1 ]; then
+	source $DOCKERFILE_ROOT/hooks/post_push
+fi
