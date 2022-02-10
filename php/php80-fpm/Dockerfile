@@ -66,7 +66,7 @@ RUN install-php-extensions \
         soap \
         sockets \
         xdebug \
-#        xmlrpc \
+        xmlrpc \
         xsl \
         zip
 
