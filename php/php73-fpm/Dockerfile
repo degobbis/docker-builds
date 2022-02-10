@@ -70,9 +70,6 @@ RUN install-php-extensions \
         xsl \
         zip
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer; \
-    rm -rf /var/cache/apk/*
-
 # https://github.com/craftcms/docker/issues/16
 # Fix work iconv library with alphine
 COPY --from=iconv-build /usr/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
