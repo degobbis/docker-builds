@@ -1,0 +1,61 @@
+#!/usr/bin/env sh
+
+if [ -z "$mysql_options" ]; then
+    mysql_options='--protocol=socket --user=root --host=localhost --comments'
+fi
+
+if ! type 'execute' &>/dev/null; then
+    # Execute mysql statement
+    # statement can be passed directly or by HEREDOC
+    execute() {
+        local dbname=""
+        local message=""
+        local statement="$1"
+
+        if [ -n "$statement" ]; then
+            if [ -f "$statement" ]; then
+                dbname=$(grep -i "create database" $statement | awk -v FS="(\`|\`)" '{print $2}')
+                message=$(wait_for_mysql_server_is_started && mysql -ss $mysql_options < "$statement" 2>&1 >/dev/null)
+            else
+                dbname=$(echo $statement | grep -i "create database" | awk -v FS="(\`|\`)" '{print $2}')
+                message=$(wait_for_mysql_server_is_started && mysql -ss $mysql_options -e "$statement" 2>&1 >/dev/null)
+            fi
+        else
+            dbname=$(cat /dev/stdin | grep -i "create database" | awk -v FS="(\`|\`)" '{print $2}')
+            message=$(wait_for_mysql_server_is_started && cat /dev/stdin | mysql -ss $mysql_options 2>&1 >/dev/null)
+        fi
+
+        if [ -n "$message" ] ; then
+            echo "$message"
+            wait_for_mysql_server_is_started && mysql -ss $mysql_options -e "DROP DATABASE IF EXISTS $dbname" &> /dev/null
+            sleep 1
+        else
+            echo "OK"
+        fi
+    }
+fi
+
+wait_for_mysql_server_is_started() {
+    for i in `seq 30 -1 0`; do
+        if mysql -ss $mysql_options -e 'SELECT 1' &> /dev/null; then
+            break
+        fi
+        sleep 1
+    done
+    if [ "$i" = 0 ]; then
+        echo "Unable to start server."
+        exit 1
+    fi
+}
+
+echo 'MySQL init process in progress...'
+
+for f in /docker-entrypoint-initdb.d/*; do
+    filename=$(basename "$f")
+    case "$f" in
+        *.sh)     echo "executing: $filename"; . "$f" ;;
+        *.sql)    echo "restoring: $filename -" $(execute "$f") ;;
+        *.sql.gz) echo "restoring: $filename -" $(gunzip -c "$f" > /tmp/temp.sql && execute /tmp/temp.sql && rm -f /tmp/temp.sql || rm -f /tmp/temp.sql) ;;
+        *)        echo "ignoring: $filename" ;;
+    esac
+done

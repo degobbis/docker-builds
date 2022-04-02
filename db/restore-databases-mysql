@@ -1,0 +1,89 @@
+#!/usr/bin/env bash
+
+if [ -z "$mysql_options" ]; then
+    mysql_options='--protocol=socket --user=root --host=localhost --socket=/var/run/mysqld/mysqld.sock --comments'
+fi
+
+_mysql_passfile() {
+	# echo the password to the "file" the client uses
+	# the client command will use process substitution to create a file on the fly
+	# ie: --defaults-extra-file=<( _mysql_passfile )
+	if [ '--dont-use-mysql-root-password' != "$1" ] && [ -n "$MYSQL_ROOT_PASSWORD" ]; then
+		cat <<-EOF
+			[client]
+			password="${MYSQL_ROOT_PASSWORD}"
+		EOF
+	fi
+}
+
+if ! type 'execute' &>/dev/null; then
+    # Execute mysql statement
+    # statement can be passed directly or by HEREDOC
+    execute() {
+        local dbname=""
+        local message=""
+        local statement="$@"
+
+        if [ -n "$statement" ]; then
+            if [ -f "$statement" ]; then
+                dbname=$(grep -i "create database" $statement | awk -v FS="(\`|\`)" '{print $2}')
+                message=$(wait_for_mysql_server_is_started && mysql --defaults-extra-file=<( _mysql_passfile ) -ss $mysql_options < "$statement" 2>&1 >/dev/null)
+           else
+                dbname=$(echo $statement | grep -i "create database" | awk -v FS="(\`|\`)" '{print $2}')
+                message=$(wait_for_mysql_server_is_started && mysql --defaults-extra-file=<( _mysql_passfile ) -ss $mysql_options -e "$statement" 2>&1 >/dev/null)
+            fi
+        else
+            dbname=$(cat /dev/stdin | grep -i "create database" | awk -v FS="(\`|\`)" '{print $2}')
+            message=$(wait_for_mysql_server_is_started && mysql --defaults-extra-file=<( _mysql_passfile ) -ss $mysql_options "$statement" 2>&1 >/dev/null)
+        fi
+
+        if [ -n "$message" ] ; then
+            echo "$message"
+            wait_for_mysql_server_is_started && mysql --defaults-extra-file=<( _mysql_passfile ) -ss $mysql_options -e "DROP DATABASE IF EXISTS $dbname" &> /dev/null
+            sleep 1
+        else
+            echo "OK"
+        fi
+    }
+fi
+
+wait_for_mysql_server_is_started() {
+    declare -g DATABASE_ALREADY_EXISTS
+    if [ -d "/var/lib/mysql/mysql" ]; then
+        DATABASE_ALREADY_EXISTS='true'
+    fi
+
+    local i
+    for i in {30..0}; do
+        # only use the root password if the database has already been initialized
+        # so that it won't try to fill in a password file when it hasn't been set yet
+        extraArgs=()
+        if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
+            extraArgs+=( '--dont-use-mysql-root-password' )
+        fi
+        if mysql --defaults-extra-file=<( _mysql_passfile "${passfileArgs[@]}") -uroot -hlocalhost --database=mysql <<<'SELECT 1' &> /dev/null; then
+            break
+        fi
+        sleep 1
+    done
+    if [ "$i" = 0 ]; then
+        echo "Unable to start server."
+        exit 1
+    fi
+}
+
+echo 'MySQL init process in progress...'
+
+if [ ! "${MYSQL_MAJOR}" = '5.7' ]; then
+    wait_for_mysql_server_is_started && mysql --defaults-extra-file=<( _mysql_passfile ) -ss $mysql_options -e "SET GLOBAL default_collation_for_utf8mb4=utf8mb4_general_ci;"
+fi
+
+for f in /docker-entrypoint-initdb.d/*; do
+    filename=$(basename "$f")
+    case "$f" in
+        *.sh)     echo "executing: $filename"; . "$f" ;;
+        *.sql)    echo "restoring: $filename -" $(execute "$f") ;;
+        *.sql.gz) echo "restoring: $filename -" $(gunzip -c "$f" > /tmp/temp.sql && execute /tmp/temp.sql && rm -f /tmp/temp.sql || rm -f /tmp/temp.sql) ;;
+        *)        echo "ignoring: $filename" ;;
+    esac
+done

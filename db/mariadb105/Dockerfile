@@ -35,9 +35,9 @@ RUN sed -Ei 's/^(bind-address|log)/#&/' /etc/my.cnf && \
 
 VOLUME /var/lib/mysql
 
-COPY ./db/docker-entrypoint /
-COPY ./db/backup-databases /usr/local/bin/
-COPY ./db/restore-databases /usr/local/bin/
+COPY ./db/docker-entrypoint-mariadb /docker-entrypoint
+COPY ./db/backup-databases-mariadb /usr/local/bin/backup-databases
+COPY ./db/restore-databases-mariadb /usr/local/bin/restore-databases
 COPY ./shared/create_user /usr/local/bin/
 
 RUN set -eu; \

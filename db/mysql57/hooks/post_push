@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# hooks/post_push
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+echo "[***] Post_push hook starting..."
+
+if [ -z "$BUILD_CODE" ]; then
+	## Build local
+	echo "[---] Push the image taged as latest."
+	docker push $IMAGE_NAME
+else
+	## Build on Dockerhub
+	ROOT_DIR="/src/$BUILD_CODE"
+	ENV_FILE="$ROOT_DIR/.env"
+
+	if [ ! -e "$ENV_FILE" ]; then
+		echo "$ENV_FILE not found!"
+		exit 1
+	fi
+
+	echo "[---] Load: $ENV_FILE"
+	source $ENV_FILE
+fi
+
+if [ -z "$MYSQL57_VERSION" ]; then
+	echo "$MYSQL57_VERSION is empty!"
+	exit 1
+fi
+
+## Tag the image with version.
+echo "[---] Adding tag $MYSQL57_VERSION to latest"
+docker tag $IMAGE_NAME $DOCKER_REPO:$MYSQL57_VERSION
+
+## Push the image with version.
+echo "[---] Push the image with version $MYSQL57_VERSION."
+docker push $DOCKER_REPO:$MYSQL57_VERSION
+
+echo "[***] ...post_push hook complete."
