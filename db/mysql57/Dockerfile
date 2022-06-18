@@ -1,4 +1,6 @@
-FROM mysql:5.7-debian
+ARG VERSION
+
+FROM mysql:${VERSION}-debian
 
 ARG VERSION
 ARG MAINTAINER
@@ -14,9 +16,13 @@ LABEL org.opencontainers.image.authors="$MAINTAINER" \
       org.opencontainers.image.version="$VERSION"
 
 RUN set -eu; \
-    apt-get update; \
-    apt-get install -y tzdata; \
+    apt-get update && apt-get upgrade -y; \
+    apt-get install -y locales tzdata; \
     ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
+    echo "$MY_TZ" >/etc/timezone; \
+    echo "de_DE.UTF-8 UTF-8\nen_US.UTF-8 UTF-8" >/etc/locale.gen; \
+    locale-gen; \
+    dpkg-reconfigure -f noninteractive tzdata; \
     rm -rf /var/lib/apt/lists/*
 
 VOLUME /var/lib/mysql
@@ -35,4 +41,5 @@ RUN  rm -rf /usr/local/bin/docker-entrypoint.sh /entrypoint.sh
 STOPSIGNAL "SIGQUIT"
 EXPOSE "3306"
 ENTRYPOINT ["/docker-entrypoint"]
-CMD ["mysqld"]
+#CMD ["mysqld"]
+CMD ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--skip-character-set-client-handshake"]

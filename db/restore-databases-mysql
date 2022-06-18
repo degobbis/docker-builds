@@ -17,9 +17,39 @@ _mysql_passfile() {
 }
 
 if ! type 'execute' &>/dev/null; then
+    # Execute mysql file
+    # file can be passed directly or by HEREDOC
+    execute() {
+        local statement=""
+        local message=""
+        local dbname="$(get_db_name "$1")"
+        local file="$1"
+
+        if [ -f "$file" ]; then
+            statement="/*!40000 DROP DATABASE IF EXISTS \`${dbname}\`*/; \
+                        CREATE DATABASE /*!32312 IF NOT EXISTS*/ \`${dbname}\` \
+                        /*!40100 DEFAULT CHARACTER SET utf8mb4 */;"
+            message=$(mysql --defaults-extra-file=<( _mysql_passfile ) -ss $mysql_options -e "$statement" 2>&1 >/dev/null)
+
+            if [ -z "$message" ] ; then
+                message=$(mysql --defaults-extra-file=<( _mysql_passfile ) -ss --database="$dbname" $mysql_options < "$file" 2>&1 >/dev/null)
+            fi
+        fi
+
+        if [ -n "$message" ] ; then
+            echo "$message"
+            mysql --defaults-extra-file=<( _mysql_passfile ) -ss $mysql_options -e "DROP DATABASE IF EXISTS $dbname" &> /dev/null
+            sleep 1
+        else
+            echo "OK"
+        fi
+    }
+fi
+
+if ! type 'execute_old' &>/dev/null; then
     # Execute mysql statement
     # statement can be passed directly or by HEREDOC
-    execute() {
+    execute_old() {
         local dbname=""
         local message=""
         local statement="$@"
@@ -47,35 +77,33 @@ if ! type 'execute' &>/dev/null; then
     }
 fi
 
-wait_for_mysql_server_is_started() {
-    declare -g DATABASE_ALREADY_EXISTS
-    if [ -d "/var/lib/mysql/mysql" ]; then
-        DATABASE_ALREADY_EXISTS='true'
-    fi
+get_db_name() {
+    local filename="$1"
+    echo "$(basename "$filename" | sed 's/\(.*\)\..*/\1/')"
+}
 
-    local i
-    for i in {30..0}; do
-        # only use the root password if the database has already been initialized
-        # so that it won't try to fill in a password file when it hasn't been set yet
-        extraArgs=()
-        if [ -z "$DATABASE_ALREADY_EXISTS" ]; then
-            extraArgs+=( '--dont-use-mysql-root-password' )
-        fi
-        if mysql --defaults-extra-file=<( _mysql_passfile "${passfileArgs[@]}") -uroot -hlocalhost --database=mysql <<<'SELECT 1' &> /dev/null; then
+wait_for_mysql_server_is_started() {
+    echo -n "Wait for database server is started: "
+    for i in {60..0}; do
+        if mysqladmin -uroot -hlocalhost -p$MYSQL_ROOT_PASSWORD --protocol=tcp ping &>/dev/null; then
+            echo " started"
             break
         fi
-        sleep 1
+        echo -n "."
+        sleep 2
     done
     if [ "$i" = 0 ]; then
-        echo "Unable to start server."
+        echo " Unable to start server."
         exit 1
     fi
 }
 
 echo 'MySQL init process in progress...'
 
+wait_for_mysql_server_is_started
+
 if [ ! "${MYSQL_MAJOR}" = '5.7' ]; then
-    wait_for_mysql_server_is_started && mysql --defaults-extra-file=<( _mysql_passfile ) -ss $mysql_options -e "SET GLOBAL default_collation_for_utf8mb4=utf8mb4_general_ci;"
+    mysql --defaults-extra-file=<( _mysql_passfile ) -ss $mysql_options -e "SET GLOBAL default_collation_for_utf8mb4=utf8mb4_general_ci;"
 fi
 
 for f in /docker-entrypoint-initdb.d/*; do
@@ -83,7 +111,13 @@ for f in /docker-entrypoint-initdb.d/*; do
     case "$f" in
         *.sh)     echo "executing: $filename"; . "$f" ;;
         *.sql)    echo "restoring: $filename -" $(execute "$f") ;;
-        *.sql.gz) echo "restoring: $filename -" $(gunzip -c "$f" > /tmp/temp.sql && execute /tmp/temp.sql && rm -f /tmp/temp.sql || rm -f /tmp/temp.sql) ;;
+        *.sql.gz) echo -n "restoring: $filename -"
+            if [ -f "/docker-entrypoint-initdb.d/$(get_db_name "$filename")" ]; then
+                echo " skipped, while SQL file found with the same name!"
+            else
+                gunzip -c "$f" > "/tmp/$(get_db_name "$filename")" && execute "/tmp/$(get_db_name "$filename")" && rm -f "/tmp/$(get_db_name "$filename")" || rm -f "/tmp/$(get_db_name "$filename")"
+            fi
+            ;;
         *)        echo "ignoring: $filename" ;;
     esac
 done

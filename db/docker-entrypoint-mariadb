@@ -74,7 +74,7 @@ if [ ! -d "$DATA_DIR/mysql" ]; then
 
   # Execute mysql statement
   # statement can be passed directly or by HEREDOC
-  execute() {
+  execute_db_on_init() {
     statement="$1"
     if [ -n "$statement" ]; then
       mysql -ss $mysql_options -e "$statement"
@@ -84,7 +84,7 @@ if [ ! -d "$DATA_DIR/mysql" ]; then
   }
 
   for i in `seq 30 -1 0`; do
-    if execute 'SELECT 1' &> /dev/null; then
+    if execute_db_on_init 'SELECT 1' &> /dev/null; then
       break
     fi
     echo 'MySQL init process in progress...'
@@ -109,7 +109,7 @@ if [ ! -d "$DATA_DIR/mysql" ]; then
 
   # Create root user, set root password, drop useless table
   # Delete root user except for
-  execute <<SQL
+  execute_db_on_init <<SQL
     -- What's done in this file shouldn't be replicated
     --  or products like mysql-fabric won't work
     SET @@SESSION.SQL_LOG_BIN=0;
@@ -127,7 +127,7 @@ SQL
   # Create root user for $MYSQL_ROOT_HOST
   file_env 'MYSQL_ROOT_HOST' '%'
   if [ "$MYSQL_ROOT_HOST" != 'localhost' ]; then
-    execute <<SQL
+    execute_db_on_init <<SQL
       CREATE USER 'root'@'${MYSQL_ROOT_HOST}' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}' ;
       GRANT ALL ON *.* TO 'root'@'${MYSQL_ROOT_HOST}' WITH GRANT OPTION ;
       FLUSH PRIVILEGES ;
@@ -136,19 +136,19 @@ SQL
 
   file_env 'MYSQL_DATABASE'
   if [ "$MYSQL_DATABASE" ]; then
-    execute "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` ;"
+    execute_db_on_init "CREATE DATABASE IF NOT EXISTS \`$MYSQL_DATABASE\` /*!40100 DEFAULT CHARACTER SET utf8mb4 */ ;"
   fi
 
   file_env 'MYSQL_USER'
   file_env 'MYSQL_PASSWORD'
   if [ "$MYSQL_USER" -a "$MYSQL_PASSWORD" ]; then
-    execute "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;"
+    execute_db_on_init "CREATE USER '$MYSQL_USER'@'%' IDENTIFIED BY '$MYSQL_PASSWORD' ;"
 
     if [ "$MYSQL_DATABASE" ]; then
-      execute "GRANT ALL ON \`$MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%' ;"
+      execute_db_on_init "GRANT ALL ON \`$MYSQL_DATABASE\`.* TO '$MYSQL_USER'@'%' ;"
     fi
 
-    execute 'FLUSH PRIVILEGES ;'
+    execute_db_on_init 'FLUSH PRIVILEGES ;'
   fi
 
   # Database cannot be specified when creating user,
@@ -158,7 +158,7 @@ SQL
   fi
 
   echo
-  [ "${INIT_DB_BY_SCRIPT:-0}" -eq 0 ] && . /usr/local/bin/restore-databases
+  #[ "${INIT_DB_BY_SCRIPT:-0}" -eq 0 ] && . /usr/local/bin/restore-databases
 
   echo "Restart MySQL ..."
 

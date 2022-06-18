@@ -76,7 +76,7 @@ do
     fi
 
     # Save database
-    mysqldump --defaults-extra-file=<( _mysql_passfile ) --databases --add-drop-database --complete-insert --routines --triggers --single-transaction $mysql_options $dbname > /docker-entrypoint-initdb.d/$dbname.sql && echo "-> Database '$dbname' saved."
+    mysqldump --defaults-extra-file=<( _mysql_passfile ) --complete-insert --routines --triggers --single-transaction $mysql_options $dbname > /docker-entrypoint-initdb.d/$dbname.sql && echo "-> Database '$dbname' saved."
 
     # Archive a copy if enabled
     [ "$ARCHIVE_DB" -eq 1 ] && cp /docker-entrypoint-initdb.d/${dbname}.sql /docker-entrypoint-initdb.d/$DATABASE_ARCHIVE_FOLDER/${dbname}.sql && echo "-> Database '$dbname' archived into '$DATABASE_ARCHIVE_FOLDER'."
