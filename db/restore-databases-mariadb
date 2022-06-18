@@ -41,8 +41,8 @@ get_db_name() {
 
 wait_for_mysql_server_is_started() {
     echo -n "Wait for database server is started: "
-    for i in {60..0}; do
-        if pidof "mysqld_safe" &>/dev/null; then
+    for i in `seq 60 -1 0`; do
+        if mysqladmin -uroot -hlocalhost -p$MYSQL_ROOT_PASSWORD --protocol=tcp ping &>/dev/null; then
             echo " started"
             break
         fi
@@ -50,7 +50,7 @@ wait_for_mysql_server_is_started() {
         sleep 2
     done
     if [ "$i" = 0 ]; then
-        echo "Unable to start server."
+        echo " Unable to start server."
         exit 1
     fi
 }
