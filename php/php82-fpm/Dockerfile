@@ -50,15 +50,6 @@ ENV PHPIZE_DEPS \
         re2c
 
 
-RUN set -eu; \
-    apk add --no-cache $PHPIZE_DEPS; \
-    pecl install xdebug-3.2.0alpha2; \
-    docker-php-ext-enable xdebug; \
-    pecl install redis; \
-    docker-php-ext-enable redis; \
-    apk del --purge $PHPIZE_DEPS
-
-
 RUN install-php-extensions \
         bcmath \
         bz2 \
@@ -73,8 +64,10 @@ RUN install-php-extensions \
         mysqli \
         opcache \
         pdo_mysql \
+        redis \
         soap \
         sockets \
+        xdebug \
         xsl \
         zip
 

@@ -54,15 +54,17 @@ if [ -z "$PHP80_VERSION" ]; then
 fi
 
 ## Build the prime image.
-docker build \
-	--file "$DOCKERFILE_PATH" \
-	--build-arg MY_TZ="$BUILD_TZ" \
-	--build-arg BUILD_DATE="$BUILD_DATE" \
-	--build-arg VERSION="$PHP80_VERSION" \
-	--build-arg MAINTAINER="$MAINTAINER" \
-	$SET_DOCUMENTATION \
-	-t $IMAGE_NAME \
-	$ROOT_DIR
+if [ "$ONLY_PUSH_TO_DOCKER" -eq 0 ]; then
+	docker build \
+		--file "$DOCKERFILE_PATH" \
+		--build-arg MY_TZ="$BUILD_TZ" \
+		--build-arg BUILD_DATE="$BUILD_DATE" \
+		--build-arg VERSION="$PHP80_VERSION" \
+		--build-arg MAINTAINER="$MAINTAINER" \
+		$SET_DOCUMENTATION \
+		-t $IMAGE_NAME \
+		$ROOT_DIR
+fi
 
 echo "[***] ...build hook complete."
 
