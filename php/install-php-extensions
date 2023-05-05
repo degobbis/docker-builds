@@ -21,7 +21,7 @@ if ! which docker-php-ext-configure >/dev/null || ! which docker-php-ext-enable 
 	exit 1
 fi
 
-IPE_VERSION=2.1.1
+IPE_VERSION=2.1.19
 
 StandWithUkraine() {
 	if test -t 1 && ! grep -Eq '^VERSION=.*jessie' /etc/os-release; then
@@ -1406,6 +1406,12 @@ buildRequiredPackageLists() {
 						;;
 				esac
 				;;
+			zmq@alpine)
+				buildRequiredPackageLists_persistent="$buildRequiredPackageLists_persistent zeromq-dev"
+				;;
+			zmq@debian)
+				buildRequiredPackageLists_persistent="$buildRequiredPackageLists_persistent libzmq3-dev"
+				;;
 			zookeeper@alpine)
 				if ! test -f /usr/local/include/zookeeper/zookeeper.h; then
 					buildRequiredPackageLists_volatile="$buildRequiredPackageLists_volatile maven automake libtool openjdk8"
@@ -2736,19 +2742,25 @@ installRemoteModule() {
 			if test -z "$installRemoteModule_version"; then
 				if test $PHP_MAJMIN_VERSION -le 506; then
 					installRemoteModule_version=1.33.1
+				else
+					case "$DISTRO_VERSION" in
+						debian@8)
+							installRemoteModule_version=1.46.3
+							;;
+						alpine@3.7 | alpine@3.8 | debian@9) # With newer version: "This package requires GCC 7 or higher"
+							installRemoteModule_version=1.52.1
+							;;
+					esac
 				fi
+			fi
+			if test -z "$installRemoteModule_version"; then
+				# See https://github.com/protocolbuffers/protobuf/issues/10619
+				installRemoteModule_version=1.54.0
 			fi
 			if test -z "$installRemoteModule_version" || test "$installRemoteModule_version" = 1.35.0; then
 				case "$DISTRO_VERSION" in
 					alpine@3.13)
 						installRemoteModule_cppflags='-Wno-maybe-uninitialized'
-						;;
-				esac
-			fi
-			if test -z "$installRemoteModule_version"; then
-				case "$DISTRO_VERSION" in
-					debian@8)
-						installRemoteModule_version=1.46.3
 						;;
 				esac
 			fi
@@ -2794,7 +2806,7 @@ installRemoteModule() {
 			if ! test -f /usr/local/lib/libionc.so || ! test -f /usr/local/include/ionc/ion.h; then
 				echo 'Installing ion-c... '
 				installRemoteModule_src="$(mktemp -p /tmp/src -d)"
-				git clone -q -c advice.detachedHead=false --depth 1 --branch v1.1.1 https://github.com/amzn/ion-c.git "$installRemoteModule_src/ion"
+				git clone -q -c advice.detachedHead=false --depth 1 --branch v1.1.2 https://github.com/amzn/ion-c.git "$installRemoteModule_src/ion"
 				(
 					cd "$installRemoteModule_src/ion"
 					git submodule init -q
@@ -3010,6 +3022,11 @@ installRemoteModule() {
 				fi
 			fi
 			;;
+		opentelemetry)
+			if test -z "$installRemoteModule_version"; then
+				installRemoteModule_version=beta
+			fi
+			;;
 		parallel)
 			if test -z "$installRemoteModule_version"; then
 				if test $PHP_MAJMIN_VERSION -le 701; then
@@ -3050,8 +3067,8 @@ installRemoteModule() {
 				if test $PHP_MAJMIN_VERSION -le 506; then
 					installRemoteModule_version=3.12.4
 				else
-					# see https://github.com/protocolbuffers/protobuf/issues/10619
-					installRemoteModule_version=3.21.6
+					# See https://github.com/protocolbuffers/protobuf/issues/10619
+					installRemoteModule_version=3.22.3
 				fi
 			fi
 			;;
@@ -3153,8 +3170,27 @@ installRemoteModule() {
 					installRemoteModule_hardware=x86-64
 					;;
 			esac
-			printf 'Downloading relay v%s (%s)... ' "$installRemoteModule_version" "$installRemoteModule_hardware"
-			installRemoteModule_url="https://builds.r2.relay.so/v${installRemoteModule_version}/relay-v${installRemoteModule_version}-php${PHP_MAJDOTMIN_VERSION}-${DISTRO}-${installRemoteModule_hardware}.tar.gz"
+			installRemoteModule_distro="$DISTRO"
+			installRemoteModule_flags=''
+			case "$DISTRO" in
+				alpine)
+					if test $DISTRO_MAJMIN_VERSION -lt 317; then
+						installRemoteModule_distro=alpine3.9
+					else
+						installRemoteModule_distro=alpine3.17
+					fi
+					;;
+				debian)
+					case "$(dpkg -l 'libssl*' | grep -E '^ii ' | cut -d' ' -f3)" in
+						libssl3*)
+							installRemoteModule_flags=+libssl3
+							;;
+					esac
+					;;
+			esac
+			# See https://relay.so/builds
+			installRemoteModule_url="https://builds.r2.relay.so/v${installRemoteModule_version}/relay-v${installRemoteModule_version}-php${PHP_MAJDOTMIN_VERSION}-${installRemoteModule_distro}-${installRemoteModule_hardware}${installRemoteModule_flags}.tar.gz"
+			printf 'Downloading relay v%s (%s) from %s... ' "$installRemoteModule_version" "$installRemoteModule_hardware" "$installRemoteModule_url"
 			installRemoteModule_src="$(getPackageSource $installRemoteModule_url)"
 			echo 'done.'
 			cp -- "$installRemoteModule_src/relay-pkg.so" "$PHP_EXTDIR/relay.so"
@@ -3179,7 +3215,7 @@ installRemoteModule() {
 		snuffleupagus)
 			if test -z "$installRemoteModule_path"; then
 				if test -z "$installRemoteModule_version"; then
-					installRemoteModule_version=0.8.2
+					installRemoteModule_version=0.9.0
 				fi
 				installRemoteModule_src="$(getPackageSource https://codeload.github.com/jvoisin/snuffleupagus/tar.gz/v$installRemoteModule_version)"
 				cd "$installRemoteModule_src/src"
@@ -3250,6 +3286,8 @@ installRemoteModule() {
 					installRemoteModule_version=5.8.1
 				elif test $PHP_MAJMIN_VERSION -le 703; then
 					installRemoteModule_version=5.9.0
+				elif test $PHP_MAJMIN_VERSION -le 704; then
+					installRemoteModule_version=5.10.1
 				fi
 			fi
 			;;
@@ -3257,8 +3295,6 @@ installRemoteModule() {
 			if test -z "$installRemoteModule_version"; then
 				if test $PHP_MAJMIN_VERSION -le 506; then
 					installRemoteModule_version=0.13
-				else
-					installRemoteModule_version=beta
 				fi
 			fi
 			;;
@@ -3306,13 +3342,41 @@ installRemoteModule() {
 					fi
 					;;
 			esac
-			if test -z "$installRemoteModule_version" || test $(compareVersions "$installRemoteModule_version" 5.0.0) -ge 0; then
+			if test -z "$installRemoteModule_version" || test $(compareVersions "$installRemoteModule_version" 5.0.1) -ge 0; then
 				# enable sockets supports?
 				addConfigureOption enable-sockets $installRemoteModule_sockets
 				# enable openssl support?
 				addConfigureOption enable-openssl $installRemoteModule_openssl
 				# enable mysqlnd support?
 				addConfigureOption enable-mysqlnd yes
+				# enable curl support?
+				addConfigureOption enable-swoole-curl yes
+				# enable cares support?
+				addConfigureOption enable-cares yes
+				# enable brotli support?
+				addConfigureOption enable-brotli yes
+			elif test $(compareVersions "$installRemoteModule_version" 5.0.0) -ge 0; then
+				# enable sockets supports?
+				addConfigureOption enable-sockets $installRemoteModule_sockets
+				# enable openssl support?
+				addConfigureOption enable-openssl $installRemoteModule_openssl
+				# enable mysqlnd support?
+				addConfigureOption enable-mysqlnd yes
+				# enable curl support?
+				addConfigureOption enable-swoole-curl yes
+				# enable cares support?
+				addConfigureOption enable-cares yes
+			elif test $(compareVersions "$installRemoteModule_version" 4.8.11) -ge 0; then
+				# enable sockets supports?
+				addConfigureOption enable-sockets $installRemoteModule_sockets
+				# enable openssl support?
+				addConfigureOption enable-openssl $installRemoteModule_openssl
+				# enable http2 support?
+				addConfigureOption enable-http2 yes
+				# enable mysqlnd support?
+				addConfigureOption enable-mysqlnd yes
+				# enable json support?
+				addConfigureOption enable-swoole-json yes
 				# enable curl support?
 				addConfigureOption enable-swoole-curl yes
 				# enable cares support?
@@ -3329,16 +3393,7 @@ installRemoteModule() {
 				# enable json support?
 				addConfigureOption enable-swoole-json yes
 				# enable curl support?
-				if test $PHP_MAJMINPAT_VERSION -ne 80000 || test $(compareVersions "$installRemoteModule_version" 4.6.1) -ge 0; then
-					addConfigureOption enable-swoole-curl yes
-				else
-					# https://github.com/swoole/swoole-src/issues/3977#issuecomment-754755521
-					addConfigureOption enable-swoole-curl no
-				fi
-				if test $(compareVersions "$installRemoteModule_version" 4.8.11) -ge 0; then
-					# enable cares support?
-					addConfigureOption enable-cares yes
-				fi
+				addConfigureOption enable-swoole-curl yes
 			elif test $(compareVersions "$installRemoteModule_version" 4.4.0) -ge 0; then
 				# enable sockets supports?
 				addConfigureOption enable-sockets $installRemoteModule_sockets
@@ -3596,12 +3651,22 @@ installRemoteModule() {
 				fi
 			fi
 			;;
+		zmq)
+			if test -z "$installRemoteModule_version"; then
+				installRemoteModule_src="$(getPackageSource https://github.com/zeromq/php-zmq/tarball/master)"
+				cd "$installRemoteModule_src"
+				phpize
+				./configure
+				make -j$(getProcessorCount)
+				make install
+				cd - >/dev/null
+				installRemoteModule_manuallyInstalled=1
+			fi
+			;;
 		zookeeper)
 			if test -z "$installRemoteModule_version"; then
 				if test $PHP_MAJMIN_VERSION -le 506; then
 					installRemoteModule_version=0.5.0
-				elif test $PHP_MAJMIN_VERSION -le 700; then
-					installRemoteModule_version=1.0.0
 				else
 					installRemoteModule_version=alpha
 				fi
@@ -3712,6 +3777,13 @@ configureInstaller() {
 		done
 	fi
 	if test $USE_PICKLE -eq 0; then
+		if test -z "$(pear config-get http_proxy)"; then
+			if test -n "${http_proxy:-}"; then
+				pear config-set http_proxy "$http_proxy" || true
+			elif test -n "${HTTP_PROXY:-}"; then
+				pear config-set http_proxy "$HTTP_PROXY" || true
+			fi
+		fi
 		pecl channel-update pecl.php.net || true
 	fi
 }
@@ -3853,10 +3925,22 @@ invokeAptGetUpdate() {
 		return
 	fi
 	IPE_APTGET_INSTALLOPTIONS=''
-	if !grep -q 'VERSION="8 (jessie)"' /etc/os-release; then
+	if ! grep -q 'VERSION="8 (jessie)"' /etc/os-release; then
+		IPE_APTGETUPDATE_ALREADY=y
 		DEBIAN_FRONTEND=noninteractive apt-get update -q
 		return
 	fi
+	# See https://www.debian.org/distrib/archive.en.html for a list of mirrors
+	if test -z "${IPE_DEB_ARCHIVE:-}"; then
+		IPE_DEB_ARCHIVE=http://archive.kernel.org/debian-archive
+	fi
+	if test -z "${IPE_DEB_ARCHIVE_SECURITY:-}"; then
+		IPE_DEB_ARCHIVE_SECURITY=http://archive.kernel.org/debian-archive/debian-security
+	fi
+	sed -ri "s;^(\s*deb\s+http://(httpredir|deb).debian.org/debian\s+jessie-updates\b.*);#\1;" /etc/apt/sources.list
+	sed -ri "s;^(\s*deb\s+)http://(httpredir|deb).debian.org;\1$IPE_DEB_ARCHIVE;" /etc/apt/sources.list
+	sed -ri "s;^(\s*deb\s+)http://security.debian.org/debian-security;\1$IPE_DEB_ARCHIVE_SECURITY;" /etc/apt/sources.list
+	sed -ri "s;^(\s*deb\s+)http://security.debian.org;\1$IPE_DEB_ARCHIVE_SECURITY;" /etc/apt/sources.list
 	invokeAptGetUpdate_tmp="$(mktemp)"
 	DEBIAN_FRONTEND=noninteractive apt-get update -q 2>"$invokeAptGetUpdate_tmp"
 	if test -s "$invokeAptGetUpdate_tmp"; then

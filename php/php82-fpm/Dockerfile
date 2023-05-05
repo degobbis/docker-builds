@@ -1,11 +1,6 @@
 ARG VERSION
 ARG TAG="$VERSION-fpm-alpine"
 
-# https://github.com/craftcms/docker/issues/16
-# Fix work iconv library with alphine
-FROM alpine:3.13 AS iconv-build
-RUN apk add --no-cache gnu-libiconv
-
 FROM php:$TAG
 
 ARG VERSION
@@ -49,7 +44,6 @@ ENV PHPIZE_DEPS \
         pkgconf \
         re2c
 
-
 RUN install-php-extensions \
         bcmath \
         bz2 \
@@ -71,15 +65,8 @@ RUN install-php-extensions \
         xsl \
         zip
 
-
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer; \
     rm -rf /var/cache/apk/*
-
-
-# https://github.com/craftcms/docker/issues/16
-# Fix work iconv library with alphine
-COPY --from=iconv-build /usr/lib/preloadable_libiconv.so /usr/lib/preloadable_libiconv.so
-ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so php
 
 WORKDIR "/srv/www"
 
