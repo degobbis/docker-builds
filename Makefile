@@ -37,7 +37,7 @@ help:
 		build-mariadb104 build-mariadb105 build-mariadb106 build-mariadb1011 build-mysql57 build-mysql80
 
 
-build-all: build-all-httpd build-all-db build-all-php ## Build all latest images and tag as :latest (includes build-all-httpd build-all-php build-all-php-eol build-all-db)
+build-all: build-all-httpd build-all-db build-all-php ## Build all latest images and tag as :latest (includes build-all-httpd build-all-php build-all-db)
 
 
 build-minica: ## Build Minica latest image and tag as :latest
