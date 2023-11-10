@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# hooks/post_push
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+if [ "$MULTI_PLATFORMS" -eq 1 ]; then
+	## Push the image with latest tag.
+	echo "[---] Push the image taged as latest."
+	docker buildx imagetools create --tag "$IMAGE_BUILD_DOCKERHUB:latest" "$IMAGE_BUILD:latest"
+
+	## Push the image with version tag.
+	echo "[---] Push the image with version $IMAGE_VERSION."
+	docker buildx imagetools create --tag "$IMAGE_BUILD_DOCKERHUB:$IMAGE_VERSION" "$IMAGE_BUILD:latest"
+else
+	## Push the image with latest tag.
+	echo "[---] Push the image taged as latest."
+	docker push "$IMAGE_BUILD:latest"
+
+	echo "[---] Adding tag $IMAGE_VERSION to latest"
+	docker tag "$IMAGE_BUILD:latest" "$IMAGE_BUILD:$IMAGE_VERSION"
+
+	## Push the image with version.
+	echo "[---] Push the image with version $IMAGE_VERSION."
+	docker push "$IMAGE_BUILD:$IMAGE_VERSION"
+	docker rmi "$IMAGE_BUILD:$IMAGE_VERSION"
+fi
+
+echo "[***] ...push hook complete."

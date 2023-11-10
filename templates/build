@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# hooks/build
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+echo "[***] Build hook starting..."
+
+BUILD_DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+SET_DOCUMENTATION=""
+DOCUMENTATION_URL="$GIT_REPOSITORY_URL/$IMAGE_BUILD_NAME/README.md"
+DOCUMENTATION_EXISTS="$(curl --silent --head --write-out %{http_code} $DOCUMENTATION_URL --output /dev/null)"
+if [ "$DOCUMENTATION_EXISTS" = "200" ]; then
+	echo "[---] Documentation exists on: $DOCUMENTATION_URL"
+	SET_DOCUMENTATION="--build-arg DOCUMENTATION=\"$DOCUMENTATION_URL\""
+fi
+
+SET_PLATFORM=""
+## Build the prime image.
+if [ "$ONLY_PUSH_TO_DOCKER" -eq 0 ]; then
+	if [ "$MULTI_PLATFORMS" -eq 1 ]; then
+		docker buildx create --driver=docker-container --name=build-multi-arch-$IMAGE_BUILD_NAME --use
+		SET_PLATFORM="--platform=$IMAGE_PLATFORMS --push"
+	fi
+
+	docker buildx build \
+		 $SET_PLATFORM \
+		--file "$IMAGE_BUILD_DOCKERFILE" \
+		--build-arg MY_TZ="$BUILD_TZ" \
+		--build-arg BUILD_DATE="$BUILD_DATE" \
+		--build-arg VERSION="$IMAGE_VERSION" \
+		--build-arg MAINTAINER="$MAINTAINER" \
+		$SET_DOCUMENTATION \
+		-t "$IMAGE_BUILD:latest" \
+		$ROOT_DIR
+
+	if [ "$MULTI_PLATFORMS" -eq 1 ]; then
+		docker pull "$IMAGE_BUILD:latest"
+		docker image tag "$IMAGE_BUILD:latest" "$IMAGE_BUILD_DOCKERHUB:latest"
+		docker rmi "$IMAGE_BUILD:latest"
+		docker buildx rm build-multi-arch-$IMAGE_BUILD_NAME
+	fi
+
+	echo "[***] ...build hook complete."
+fi
+
+## Load the post push script, if local build
+if [ "$PUSH_TO_DOCKER" -eq 1 ]; then
+	source $ROOT_DIR/templates/push
+fi

@@ -73,6 +73,7 @@ docker_process_init_files() {
 				fi
 				;;
 			*.sql)     mysql_note "$0: running $f"; docker_process_sql < "$f"; echo ;;
+			*.sql.bz2) mysql_note "$0: running $f"; bunzip2 -c "$f" | docker_process_sql; echo ;;
 			*.sql.gz)  mysql_note "$0: running $f"; gunzip -c "$f" | docker_process_sql; echo ;;
 			*.sql.xz)  mysql_note "$0: running $f"; xzcat "$f" | docker_process_sql; echo ;;
 			*.sql.zst) mysql_note "$0: running $f"; zstd -dc "$f" | docker_process_sql; echo ;;
@@ -159,7 +160,7 @@ docker_verify_minimum_env() {
 	if [ -z "$MYSQL_ROOT_PASSWORD" -a -z "$MYSQL_ALLOW_EMPTY_PASSWORD" -a -z "$MYSQL_RANDOM_ROOT_PASSWORD" ]; then
 		mysql_error <<-'EOF'
 			Database is uninitialized and password option is not specified
-			    You need to specify one of the following:
+			    You need to specify one of the following as an environment variable:
 			    - MYSQL_ROOT_PASSWORD
 			    - MYSQL_ALLOW_EMPTY_PASSWORD
 			    - MYSQL_RANDOM_ROOT_PASSWORD
@@ -190,13 +191,44 @@ docker_verify_minimum_env() {
 docker_create_db_directories() {
 	local user; user="$(id -u)"
 
-	# TODO other directories that are used by default? like /var/lib/mysql-files
-	# see https://github.com/docker-library/mysql/issues/562
-	mkdir -p "$DATADIR"
+	local -A dirs=( ["$DATADIR"]=1 )
+	local dir
+	dir="$(dirname "$SOCKET")"
+	dirs["$dir"]=1
+
+	# "datadir" and "socket" are already handled above (since they were already queried previously)
+	local conf
+	for conf in \
+		general-log-file \
+		keyring_file_data \
+		pid-file \
+		secure-file-priv \
+		slow-query-log-file \
+	; do
+		dir="$(mysql_get_config "$conf" "$@")"
+
+		# skip empty values
+		if [ -z "$dir" ] || [ "$dir" = 'NULL' ]; then
+			continue
+		fi
+		case "$conf" in
+			secure-file-priv)
+				# already points at a directory
+				;;
+			*)
+				# other config options point at a file, but we need the directory
+				dir="$(dirname "$dir")"
+				;;
+		esac
+
+		dirs["$dir"]=1
+	done
+
+	mkdir -p "${!dirs[@]}"
 
 	if [ "$user" = "0" ]; then
 		# this will cause less disk access than `chown -R`
-		find "$DATADIR" \! -user mysql -exec chown mysql '{}' +
+		find "${!dirs[@]}" \! -user mysql -exec chown --no-dereference mysql '{}' +
 	fi
 }
 
@@ -358,20 +390,11 @@ _main() {
 		mysql_check_config "$@"
 		# Load various environment variables
 		docker_setup_env "$@"
-		docker_create_db_directories
+		docker_create_db_directories "$@"
 
 		# If container is started as root user, restart as dedicated mysql user
 		if [ "$(id -u)" = "0" ]; then
-            ln -sf /usr/share/zoneinfo/${TZ} /etc/localtime
-
-            # Create host userid/groupid for the databases backups.
-            groupmod -g ${APP_GROUP_ID:-1000} mysql
-            usermod -u ${APP_USER_ID:-1000} mysql
-            chown -R mysql:mysql /var/lib/mysql /var/run/mysqld
-            chmod 1777 /var/run/mysqld /var/lib/mysql
-            #create_user ${APP_USER_ID:-1000} ${APP_GROUP_ID:-1000}
-
-			mysql_note "Switching to dedicated user 'mysql' - $BASH_SOURCE - $@"
+			mysql_note "Switching to dedicated user 'mysql'"
 			exec gosu mysql "$BASH_SOURCE" "$@"
 		fi
 

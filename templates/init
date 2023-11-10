@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# hooks/pre_build
+# https://docs.docker.com/docker-cloud/builds/advanced/
+
+echo "[***] Init build hook..."
+
+IMAGE_BUILD_NAME="$1"
+echo "[---] Set IMAGE_BUILD_NAME to $IMAGE_BUILD_NAME"
+
+IMAGE_BUILD_DOCKERFILE="$2"
+echo "[---] Set IMAGE_BUILD_DOCKERFILE to $IMAGE_BUILD_DOCKERFILE"
+
+
+if [ ! -e "$ENV_FILE" ]; then
+	echo "$ENV_FILE not found!"
+	exit 1
+fi
+echo "[+++] Load environment variables from: $ENV_FILE"
+source $ENV_FILE
+
+
+if [ -z "$DOCKER_HUB_REPOSITORY" ]; then
+	echo "[xxx] DOCKER_HUB_REPOSITORY is empty!"
+	exit 1
+fi
+IMAGE_BUILD_DOCKERHUB="$DOCKER_HUB_REPOSITORY/$IMAGE_BUILD_NAME"
+echo "[---] Set IMAGE_BUILD_DOCKERHUB to $IMAGE_BUILD_DOCKERHUB"
+
+
+IMAGE_BUILD="$IMAGE_BUILD_DOCKERHUB"
+if [ "$MULTI_PLATFORMS" -eq 1 ]; then
+	echo "[!!!] Building for muliple platform is enabled"
+
+	if [ -z "$DOCKER_HUB_REPOSITORY_LOCAL_PREFIX" ]; then
+		echo "[xxx] DOCKER_HUB_REPOSITORY_LOCAL_PREFIX is empty!"
+		exit 1
+	fi
+	IMAGE_BUILD_LOCAL="$DOCKER_HUB_REPOSITORY_LOCAL_PREFIX/$IMAGE_BUILD_DOCKERHUB"
+	echo "[---] Set IMAGE_BUILD_LOCAL to $IMAGE_BUILD_LOCAL"
+
+	declare -n IMAGE_PLATFORMS="${IMAGE_BUILD_NAME^^}_PLATFORMS"
+	if [ -z "${IMAGE_PLATFORMS}" ]; then
+		echo "[xxx] ${IMAGE_BUILD_NAME^^}_PLATFORMS is empty!"
+		exit 1
+	fi
+	echo "[---] Set IMAGE_PLATFORMS to $IMAGE_PLATFORMS"
+
+	IMAGE_BUILD="$IMAGE_BUILD_LOCAL"
+fi
+echo "[---] Set IMAGE_BUILD to $IMAGE_BUILD"
+
+
+declare -n IMAGE_VERSION="${IMAGE_BUILD_NAME^^}_VERSION"
+if [ -z "$IMAGE_VERSION" ]; then
+	echo "[xxx] ${IMAGE_BUILD_NAME^^}_VERSION is empty!"
+	exit 1
+fi
+echo "[---] Set IMAGE_VERSION to $IMAGE_VERSION"
+
+
+source $ROOT_DIR/templates/build
