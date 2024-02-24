@@ -36,10 +36,6 @@ help:
 build-all: build-all-httpd build-all-db build-all-php ## Build all latest images and tag as :latest (includes build-all-httpd build-all-php build-all-db)
 
 
-build-bind: ## Build BIND9 latest image and tag as :latest
-	$(DOCKER_BUILD_INIT) "bind" "$(ROOT_DIR)/bind/Dockerfile"
-
-
 build-minica: ## Build minica latest image and tag as :latest
 	$(DOCKER_BUILD_INIT) "minica" "$(ROOT_DIR)/minica/Dockerfile"
 
@@ -50,19 +46,19 @@ build-apache24: ## Build Apache 2.4 latest image and tag as :latest
 	$(DOCKER_BUILD_INIT) "apache24" "$(ROOT_DIR)/httpd/apache24/Dockerfile"
 
 
-build-all-php: build-php80 build-php81 build-php82 ## Build all latest php images and tag as :latest (not EOL)
+build-all-php: build-php81 build-php82 build-php83 ## Build all latest php images and tag as :latest (not EOL)
 
-build-php80: ## Build latest PHP8.0 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "php80" "$(ROOT_DIR)/php/php80/Dockerfile"
-
-build-php81: ## Build latest PHP8.0 image and tag as :latest
+build-php81: ## Build latest PHP8.1 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "php81" "$(ROOT_DIR)/php/php81/Dockerfile"
 
-build-php82: ## Build latest PHP8.0 image and tag as :latest
+build-php82: ## Build latest PHP8.2 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "php82" "$(ROOT_DIR)/php/php82/Dockerfile"
 
+build-php83: ## Build latest PHP8.3 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "php83" "$(ROOT_DIR)/php/php83/Dockerfile"
 
-build-all-php-eol: build-php56 build-php73 build-php74 ## Build all EOL latest php images and tag as :latest
+
+build-all-php-eol: build-php56 build-php73 build-php74 build-php80 ## Build all EOL latest php images and tag as :latest
 
 build-php56: ## Build latest PHP5.6 image and tag as :latest (EOL)
 	$(DOCKER_BUILD_INIT) "php56" "$(ROOT_DIR)/php/php56/Dockerfile"
@@ -73,10 +69,31 @@ build-php73: ## Build latest PHP7.3 image and tag as :latest (EOL)
 build-php74: ## Build latest PHP7.4 image and tag as :latest (EOL)
 	$(DOCKER_BUILD_INIT) "php74" "$(ROOT_DIR)/php/php74/Dockerfile"
 
+build-php80: ## Build latest PHP8.0 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "php80" "$(ROOT_DIR)/php/php80/Dockerfile"
 
-build-all-db: build-mariadb1011 build-mariadb106 build-mariadb105 build-mariadb104 build-mysql80 build-mysql57## Build all latest db images and tag as :latest
+
+build-all-db: build-mariadb1011 build-mariadb106 build-mariadb105 build-mariadb104 build-mysql83 build-mysql80 ## Build all latest db images and tag as :latest
+
+build-all-db-eol: build-mysql57 ## Build all EOL latest db images and tag as :latest
+
+
+build-all-mysql: build-mysql83 build-mysql80 ## Build all latest MySQL images and tag as :latest
+
+build-mysql80: ## Build latest MySQL 8.0 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mysql80" "$(ROOT_DIR)/db/mysql80/Dockerfile"
+
+build-mysql83: ## Build latest MySQL 8.3 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mysql83" "$(ROOT_DIR)/db/mysql83/Dockerfile"
+
+
+build-all-mysql-eol: build-mysql57 ## Build all EOL latest MySQL images and tag as :latest
+
+build-mysql57: ## Build latest MySQL 5.7 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mysql57" "$(ROOT_DIR)/db/mysql57/Dockerfile"
+
+
 build-all-mariadb: build-mariadb1011 build-mariadb106 build-mariadb105 build-mariadb104 ## Build all latest db images and tag as :latest for MariaDB
-build-all-mysql: build-mysql80 build-mysql57## Build all latest db images and tag as :latest for MySQL
 
 build-mariadb104: ## Build latest MariaDB 10.4 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mariadb104" "$(ROOT_DIR)/db/mariadb104/Dockerfile"
@@ -90,11 +107,6 @@ build-mariadb106: ## Build latest MariaDB 10.6 image and tag as :latest
 build-mariadb1011: ## Build latest MariaDB 10.11 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mariadb1011" "$(ROOT_DIR)/db/mariadb1011/Dockerfile"
 
-build-mysql57: ## Build latest MySQL 5.7 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "mysql57" "$(ROOT_DIR)/db/mysql57/Dockerfile"
-
-build-mysql80: ## Build latest MySQL 8.0 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "mysql80" "$(ROOT_DIR)/db/mysql80/Dockerfile"
 
 clear-build-cache: ## Clears the docker buildx cache
 	docker buildx rm --all-inactive --force
