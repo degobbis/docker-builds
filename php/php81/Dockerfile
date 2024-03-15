@@ -26,6 +26,7 @@ RUN set -eu; \
 COPY ./php/install-php-extensions /usr/local/bin/
 COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
+COPY --from=composer/composer:latest-bin /composer /usr/local/bin/composer
 
 RUN set -eu; \
     chmod +x /httpd-php-entrypoint && \
@@ -64,8 +65,7 @@ RUN install-php-extensions \
         xsl \
         zip
 
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer; \
-    rm -rf /var/cache/apk/*
+RUN rm -rf /var/cache/apk/*
 
 WORKDIR "/srv/www"
 
