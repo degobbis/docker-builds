@@ -31,4 +31,4 @@ RUN set -eu; \
 EXPOSE "3306"
 ENTRYPOINT ["/docker-entrypoint"]
 #CMD ["mysqld"]
-CMD ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--skip-character-set-client-handshake"]
+CMD ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci"]
