@@ -28,7 +28,7 @@ help:
 
 .PHONY: build-all build-all-db build-all-php build-all-php-eol build-all-httpd build-all-mariadb build-all-mysql \
 		build-bind build-minica build-apache24 \
-		build-php56 build-php73 build-php74 build-php80 build-php81 build-php82 \
+		build-php56 build-php74 build-php80 build-php81 build-php82 \
 		build-mariadb104 build-mariadb105 build-mariadb106 build-mariadb1011 build-mysql57 build-mysql80 \
 		clear-build-cache
 
@@ -62,9 +62,6 @@ build-all-php-eol: build-php56 build-php73 build-php74 build-php80 ## Build all 
 
 build-php56: ## Build latest PHP5.6 image and tag as :latest (EOL)
 	$(DOCKER_BUILD_INIT) "php56" "$(ROOT_DIR)/php/php56/Dockerfile"
-
-build-php73: ## Build latest PHP7.3 image and tag as :latest (EOL)
-	$(DOCKER_BUILD_INIT) "php73" "$(ROOT_DIR)/php/php73/Dockerfile"
 
 build-php74: ## Build latest PHP7.4 image and tag as :latest (EOL)
 	$(DOCKER_BUILD_INIT) "php74" "$(ROOT_DIR)/php/php74/Dockerfile"
