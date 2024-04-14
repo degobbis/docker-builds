@@ -3,6 +3,7 @@ ARG TAG="$VERSION-fpm-alpine"
 
 FROM php:$TAG
 
+ARG TARGETARCH
 ARG VERSION
 ARG MAINTAINER
 ARG BUILD_DATE="1970-01-01T00:00:00UTC"
@@ -26,7 +27,8 @@ RUN set -eu; \
 COPY ./php/install-php-extensions /usr/local/bin/
 COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
-COPY --from=composer/composer:latest-bin /composer /usr/local/bin/composer
+COPY ./shared/mhsendmail/linux_$TARGETARCH/mhsendmail /usr/local/bin/
+COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 
 RUN set -eu; \
     chmod +x /httpd-php-entrypoint && \

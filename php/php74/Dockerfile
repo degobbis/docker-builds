@@ -8,6 +8,7 @@ RUN apk add --no-cache gnu-libiconv
 
 FROM php:$TAG
 
+ARG TARGETARCH
 ARG VERSION
 ARG MAINTAINER
 ARG BUILD_DATE="1970-01-01T00:00:00UTC"
@@ -31,6 +32,8 @@ RUN set -eu; \
 COPY ./php/install-php-extensions /usr/local/bin/
 COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
+COPY ./shared/mhsendmail/linux_$TARGETARCH/mhsendmail /usr/local/bin/
+COPY --from=composer /usr/bin/composer /usr/local/bin/composer
 
 RUN set -eu; \
     chmod +x /httpd-php-entrypoint && \
@@ -69,9 +72,6 @@ RUN install-php-extensions \
         xmlrpc \
         xsl \
         zip
-
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer; \
-    rm -rf /var/cache/apk/*
 
 # https://github.com/craftcms/docker/issues/16
 # Fix work iconv library with alphine
