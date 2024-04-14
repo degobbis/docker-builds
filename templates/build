@@ -23,7 +23,8 @@ if [ "$ONLY_PUSH_TO_DOCKER" -eq 0 ]; then
 	fi
 
 	docker buildx build \
-		 $SET_PLATFORM \
+		$SET_PLATFORM \
+		--network host \
 		--file "$IMAGE_BUILD_DOCKERFILE" \
 		--build-arg MY_TZ="$BUILD_TZ" \
 		--build-arg BUILD_DATE="$BUILD_DATE" \
