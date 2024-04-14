@@ -30,6 +30,7 @@ help:
 		build-bind build-minica build-apache24 \
 		build-php56 build-php74 build-php80 build-php81 build-php82 \
 		build-mariadb104 build-mariadb105 build-mariadb106 build-mariadb1011 build-mysql57 build-mysql80 \
+		build-mhs \
 		clear-build-cache
 
 
@@ -58,7 +59,7 @@ build-php83: ## Build latest PHP8.3 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "php83" "$(ROOT_DIR)/php/php83/Dockerfile"
 
 
-build-all-php-eol: build-php56 build-php73 build-php74 build-php80 ## Build all EOL latest php images and tag as :latest
+build-all-php-eol: build-php56 build-php74 build-php80 ## Build all EOL latest php images and tag as :latest
 
 build-php56: ## Build latest PHP5.6 image and tag as :latest (EOL)
 	$(DOCKER_BUILD_INIT) "php56" "$(ROOT_DIR)/php/php56/Dockerfile"
@@ -105,6 +106,10 @@ build-mariadb1011: ## Build latest MariaDB 10.11 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mariadb1011" "$(ROOT_DIR)/db/mariadb1011/Dockerfile"
 
 
+build-mhs: ## Build mhsendmail for several architectur
+	docker buildx create --driver=docker-container --name=build-multi-arch-mhs --use
+	docker buildx build --platform="linux/386,linux/amd64,linux/arm,linux/arm64" --output type=local,dest=./shared/mhsendmail/ --file "$(ROOT_DIR)/mhsendmail/Dockerfile" --build-arg VERSION="1.22" .
+	docker buildx rm build-multi-arch-mhs
 clear-build-cache: ## Clears the docker buildx cache
 	docker buildx rm --all-inactive --force
 	docker buildx prune -f
