@@ -1,4 +1,4 @@
-FROM alpine:3.18
+FROM alpine:3.20
 
 ARG VERSION
 ARG MAINTAINER
@@ -46,4 +46,4 @@ RUN set -eu; \
 STOPSIGNAL "SIGQUIT"
 EXPOSE "3306"
 ENTRYPOINT ["/docker-entrypoint"]
-CMD ["mysqld_safe"]
+CMD ["mariadbd-safe"]

@@ -10,7 +10,7 @@ create_user ${APP_USER_ID:-1000} ${APP_GROUP_ID:-1000}
 
 # if command starts with an option, prepend mysqld
 if [ "${1:0:1}" = '-' ]; then
-  set -- mysqld_safe "$@"
+  set -- mariadbd-safe "$@"
 fi
 
 # usage: file_env VAR [DEFAULT]
@@ -45,7 +45,7 @@ file_env() {
 # latter only show values present in config files, and not server defaults
 _get_config() {
   conf="$1"
-  mysqld --verbose --help --log-bin-index="$(mktemp -u)" 2>/dev/null | awk '$1 == "'"$conf"'" { print $2; exit }'
+  mariadbd --verbose --help --log-bin-index="$(mktemp -u)" 2>/dev/null | awk '$1 == "'"$conf"'" { print $2; exit }'
 }
 
 DATA_DIR="$(_get_config 'datadir')"
@@ -63,12 +63,12 @@ if [ ! -d "$DATA_DIR/mysql" ]; then
   chown mysql: "$DATA_DIR"
 
   echo 'Initializing database'
-  mysql_install_db --user=mysql --datadir="$DATA_DIR" --rpm
+  mariadb-install-db --user=mysql --datadir="$DATA_DIR" --rpm
   chown -R mysql: "$DATA_DIR"
   echo 'Database initialized'
 
   # Start mysqld to config it
-  mysqld_safe --skip-networking --nowatch
+  mariadbd-safe --skip-networking --nowatch
 
   mysql_options='--protocol=socket -uroot'
 
@@ -77,9 +77,9 @@ if [ ! -d "$DATA_DIR/mysql" ]; then
   execute_db_on_init() {
     statement="$1"
     if [ -n "$statement" ]; then
-      mysql -ss $mysql_options -e "$statement"
+      mariadb -ss $mysql_options -e "$statement"
     else
-      cat /dev/stdin | mysql -ss $mysql_options
+      cat /dev/stdin | mariadb -ss $mysql_options
    fi
   }
 
@@ -97,9 +97,9 @@ if [ ! -d "$DATA_DIR/mysql" ]; then
 
   if [ -z "$MYSQL_INITDB_SKIP_TZINFO" ]; then
     # sed is for https://bugs.mysql.com/bug.php?id=20545
-    mysql_tzinfo_to_sql /usr/share/zoneinfo | \
+    mariadb-tzinfo-to-sql /usr/share/zoneinfo | \
       sed 's/Local time zone must be set--see zic manual page/FCTY/' | \
-      mysql $mysql_options mysql
+      mariadb $mysql_options mysql
   fi
 
   if [ -n "$MYSQL_RANDOM_ROOT_PASSWORD" ]; then
@@ -162,7 +162,7 @@ SQL
 
   echo "Restart MySQL ..."
 
-  if ! mysqladmin -uroot --password="$MYSQL_PWD" shutdown; then
+  if ! mariadb-admin -uroot --password="$MYSQL_PWD" shutdown; then
     echo >&2 'Shutdown failed'
     exit 1
   fi

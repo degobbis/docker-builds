@@ -1,4 +1,4 @@
-FROM alpine:3.12
+FROM alpine:edge
 
 ARG VERSION
 ARG MAINTAINER
@@ -17,7 +17,6 @@ COPY ./shared/aliases.sh /etc/profile.d/
 
 RUN set -eu; \
     apk add --no-cache ca-certificates tzdata shadow mariadb mariadb-client mariadb-server-utils; \
-    apk upgrade --update; \
     ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
     mkdir /docker-entrypoint-initdb.d; \
     rm -rf /var/cache/apk/*

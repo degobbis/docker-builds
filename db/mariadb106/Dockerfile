@@ -47,4 +47,4 @@ RUN set -eu; \
 STOPSIGNAL "SIGQUIT"
 EXPOSE "3306"
 ENTRYPOINT ["/docker-entrypoint"]
-CMD ["mysqld_safe"]
+CMD ["mariadbd-safe"]

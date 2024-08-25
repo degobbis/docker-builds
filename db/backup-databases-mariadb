@@ -31,7 +31,7 @@ else
 fi
 
 # If no databases to back up are specified, all databases will be added to the list.
-DATABASES_LIST=${BACKUP_DB_LIST:-$(mysql $mysql_options -N -e 'show databases')}
+DATABASES_LIST=${BACKUP_DB_LIST:-$(mariadb $mysql_options -N -e 'show databases')}
 
 # Additional archiving of the databases.
 ARCHIVE_DB=${ARCHIVE:-0}
@@ -59,12 +59,12 @@ do
     fi
 
     if [ "$SELECTED_SAVE" -eq 1 ]; then
-        DB_EXISTS=$(mysql $mysql_options -N -e "use $dbname">/dev/null 2>&1 && echo 1 || echo 0)
+        DB_EXISTS=$(mariadb $mysql_options -N -e "use $dbname">/dev/null 2>&1 && echo 1 || echo 0)
         [ "$DB_EXISTS" -eq 0 ] && echo "ERROR: Database '$dbname' not found!" && continue
     fi
 
     # Save database
-    mysqldump --complete-insert --routines --triggers --single-transaction $mysql_options $dbname > /docker-entrypoint-initdb.d/$dbname.sql && echo "-> Database '$dbname' saved."
+    mariadb-dump --complete-insert --routines --triggers --single-transaction $mysql_options $dbname | sed '/!.*\\\?- enable the sandbox mode/d' > /docker-entrypoint-initdb.d/$dbname.sql && echo "-> Database '$dbname' saved."
 
     # Archive a copy if enabled
     [ "$ARCHIVE_DB" -eq 1 ] && cp /docker-entrypoint-initdb.d/${dbname}.sql /docker-entrypoint-initdb.d/$DATABASE_ARCHIVE_FOLDER/${dbname}.sql && echo "-> Database '$dbname' archived into '$DATABASE_ARCHIVE_FOLDER'."

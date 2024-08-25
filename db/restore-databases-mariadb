@@ -17,16 +17,16 @@ if ! type 'execute' &>/dev/null; then
             statement="/*!40000 DROP DATABASE IF EXISTS \`${dbname}\`*/; \
                         CREATE DATABASE /*!32312 IF NOT EXISTS*/ \`${dbname}\` \
                         /*!40100 DEFAULT CHARACTER SET utf8mb4 */;"
-            message=$(mysql -ss $mysql_options -e "$statement" 2>&1 >/dev/null)
+            message=$(mariadb -ss $mysql_options -e "$statement" 2>&1 >/dev/null)
 
             if [ -z "$message" ] ; then
-                message=$(mysql -ss $mysql_options --database="$dbname" < "$file" 2>&1 >/dev/null)
+                message=$(mariadb -ss $mysql_options --database="$dbname" < "$file" 2>&1 >/dev/null)
             fi
         fi
 
         if [ -n "$message" ] ; then
             echo "$message"
-            mysql -ss $mysql_options -e "DROP DATABASE IF EXISTS $dbname" &> /dev/null
+            mariadb -ss $mysql_options -e "DROP DATABASE IF EXISTS $dbname" &> /dev/null
             sleep 1
         else
             echo "OK"
@@ -42,7 +42,7 @@ get_db_name() {
 wait_for_mysql_server_is_started() {
     echo -n "Wait for database server is started: "
     for i in `seq 60 -1 0`; do
-        if mysqladmin -uroot -hlocalhost -p$MYSQL_ROOT_PASSWORD --protocol=tcp ping &>/dev/null; then
+        if mariadb-admin -uroot -hlocalhost -p$MYSQL_ROOT_PASSWORD --protocol=tcp ping &>/dev/null; then
             echo " started"
             break
         fi
