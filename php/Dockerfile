@@ -1,14 +1,14 @@
-ARG VERSION
+ARG VERSION="0.0.0"
 ARG TAG="$VERSION-fpm-alpine"
 
 FROM php:$TAG
 
 ARG TARGETARCH
-ARG VERSION
-ARG MAINTAINER
+ARG VERSION="0.0.0"
+ARG MAINTAINER="Guido De Gobbis"
 ARG BUILD_DATE="1970-01-01T00:00:00UTC"
 ARG DOCUMENTATION="no documentation"
-ARG MY_TZ
+ARG MY_TZ="UTC"
 ENV TZ="$MY_TZ" \
     ENV="/etc/profile"
 
@@ -20,8 +20,8 @@ LABEL org.opencontainers.image.authors="$MAINTAINER" \
 COPY ./shared/aliases.sh /etc/profile.d/
 
 RUN set -eu; \
-    apk add --no-cache tzdata shadow git ca-certificates gnu-libiconv; \
     apk upgrade --update; \
+    apk add --no-cache tzdata shadow git ca-certificates gnu-libiconv; \
     ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime
 
 COPY ./php/install-php-extensions /usr/local/bin/
@@ -34,7 +34,7 @@ RUN set -eu; \
     chmod +x /httpd-php-entrypoint && \
     chmod +x /usr/local/bin/*
 
-ENV PHPIZE_DEPS \
+ENV PHPIZE_DEPS="\
         autoconf \
         coreutils \
         dpkg-dev dpkg \
@@ -42,9 +42,10 @@ ENV PHPIZE_DEPS \
         g++ \
         gcc \
         libc-dev \
+        linux-headers \
         make \
         pkgconf \
-        re2c
+        re2c"
 
 RUN install-php-extensions \
         bcmath \

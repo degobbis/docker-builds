@@ -50,13 +50,13 @@ build-apache24: ## Build Apache 2.4 latest image and tag as :latest
 build-all-php: build-php81 build-php82 build-php83 ## Build all latest php images and tag as :latest (not EOL)
 
 build-php81: ## Build latest PHP8.1 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "php81" "$(ROOT_DIR)/php/php81/Dockerfile"
+	$(DOCKER_BUILD_INIT) "php81" "$(ROOT_DIR)/php/Dockerfile"
 
 build-php82: ## Build latest PHP8.2 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "php82" "$(ROOT_DIR)/php/php82/Dockerfile"
+	$(DOCKER_BUILD_INIT) "php82" "$(ROOT_DIR)/php/Dockerfile"
 
 build-php83: ## Build latest PHP8.3 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "php83" "$(ROOT_DIR)/php/php83/Dockerfile"
+	$(DOCKER_BUILD_INIT) "php83" "$(ROOT_DIR)/php/Dockerfile"
 
 
 build-all-php-eol: build-php56 build-php74 build-php80 ## Build all EOL latest php images and tag as :latest
@@ -65,10 +65,10 @@ build-php56: ## Build latest PHP5.6 image and tag as :latest (EOL)
 	$(DOCKER_BUILD_INIT) "php56" "$(ROOT_DIR)/php/php56/Dockerfile"
 
 build-php74: ## Build latest PHP7.4 image and tag as :latest (EOL)
-	$(DOCKER_BUILD_INIT) "php74" "$(ROOT_DIR)/php/php74/Dockerfile"
+	$(DOCKER_BUILD_INIT) "php74" "$(ROOT_DIR)/php/Dockerfile"
 
 build-php80: ## Build latest PHP8.0 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "php80" "$(ROOT_DIR)/php/php80/Dockerfile"
+	$(DOCKER_BUILD_INIT) "php80" "$(ROOT_DIR)/php/Dockerfile"
 
 
 build-all-db: build-mariadb114 build-mariadb1011 build-mariadb106 build-mariadb105 build-mariadb104 build-mysql84 build-mysql83 build-mysql80 ## Build all latest db images and tag as :latest
