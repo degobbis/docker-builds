@@ -28,6 +28,7 @@ if [ "$ONLY_PUSH_TO_DOCKER" -eq 0 ]; then
 		--file "$IMAGE_BUILD_DOCKERFILE" \
 		--build-arg MY_TZ="$BUILD_TZ" \
 		--build-arg BUILD_DATE="$BUILD_DATE" \
+		--build-arg BUILD_BASE_IMAGE="$BUILD_BASE_IMAGE" \
 		--build-arg VERSION="$IMAGE_VERSION" \
 		--build-arg MAINTAINER="$MAINTAINER" \
 		$SET_DOCUMENTATION \

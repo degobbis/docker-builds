@@ -58,4 +58,11 @@ fi
 echo "[---] Set IMAGE_VERSION to $IMAGE_VERSION"
 
 
+declare -n BUILD_BASE_IMAGE="${IMAGE_BUILD_NAME^^}_BUILD_BASE"
+if [ -z "$BUILD_BASE_IMAGE" ]; then
+	echo "[xxx] ${IMAGE_BUILD_NAME^^}_BUILD_BASE is empty!"
+fi
+echo "[---] Set BUILD_BASE_IMAGE to $BUILD_BASE_IMAGE"
+
+
 source $ROOT_DIR/templates/build
