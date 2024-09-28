@@ -5,11 +5,11 @@ RUN apk add --no-cache git \
 FROM alpine:latest
 COPY --from=build /go/bin/minica /usr/local/bin/minica
 
-ARG VERSION
-ARG MAINTAINER
+ARG VERSION="0.0.0"
+ARG MAINTAINER="Guido De Gobbis"
 ARG BUILD_DATE="1970-01-01T00:00:00UTC"
 ARG DOCUMENTATION="no documentation"
-ARG MY_TZ
+ARG MY_TZ="UTC"
 ENV TZ="$MY_TZ" \
     ENV="/etc/profile"
 

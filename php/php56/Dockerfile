@@ -1,13 +1,13 @@
-ARG VERSION
+ARG VERSION="0.0.0"
 ARG TAG="$VERSION-fpm-alpine"
 
 FROM php:$TAG
 
-ARG VERSION
-ARG MAINTAINER
+ARG VERSION="0.0.0"
+ARG MAINTAINER="Guido De Gobbis"
 ARG BUILD_DATE="1970-01-01T00:00:00UTC"
 ARG DOCUMENTATION="no documentation"
-ARG MY_TZ
+ARG MY_TZ="UTC"
 ENV TZ="$MY_TZ" \
     ENV="/etc/profile"
 
@@ -21,8 +21,7 @@ COPY ./shared/aliases.sh /etc/profile.d/
 RUN set -eu; \
     apk upgrade --update; \
     apk add --no-cache tzdata shadow; \
-    ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
-    rm -rf /var/cache/apk/*
+    ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime;
 
 # fix work iconv library with alphine
 RUN apk add --no-cache --repository http://dl-cdn.alpinelinux.org/alpine/v3.13/community/ --allow-untrusted gnu-libiconv
@@ -36,7 +35,7 @@ RUN set -eu; \
     chmod +x /httpd-php-entrypoint && \
     chmod +x /usr/local/bin/*
 
-ENV PHPIZE_DEPS \
+ENV PHPIZE_DEPS="\
         autoconf \
         coreutils \
         dpkg-dev dpkg \
@@ -46,7 +45,7 @@ ENV PHPIZE_DEPS \
         libc-dev \
         make \
         pkgconf \
-        re2c
+        re2c"
 
 RUN install-php-extensions \
         bcmath \
@@ -69,6 +68,8 @@ RUN install-php-extensions \
         xmlrpc \
         xsl \
         zip
+
+RUN rm -rf /var/cache/apk/*
 
 WORKDIR "/srv/www"
 

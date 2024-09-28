@@ -1,4 +1,4 @@
-ARG VERSION
+ARG VERSION="0.0.0"
 ARG TAG="$VERSION-alpine"
 
 FROM golang:$TAG AS mhsbuild
