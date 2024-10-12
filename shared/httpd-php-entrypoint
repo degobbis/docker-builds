@@ -25,4 +25,6 @@ if [ -d "${PHP_INI_DIR}" ]; then
 
 fi
 
+update-ca-certificates
+
 exec "$@"
