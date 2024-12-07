@@ -28,7 +28,7 @@ help:
 
 .PHONY: build-all build-all-db build-all-php build-all-php-eol build-all-httpd build-all-mariadb build-all-mysql \
 		build-bind build-minica build-apache24 \
-		build-php56 build-php74 build-php80 build-php81 build-php82 build-php83 \
+		build-php56 build-php74 build-php80 build-php81 build-php82 build-php83 build-php84 \
 		build-mariadb104 build-mariadb105 build-mariadb106 build-mariadb1011 build-mariadb114 build-mysql57 build-mysql80 build-mysql83 build-mysql84 \
 		build-mhs \
 		clear-build-cache
@@ -47,7 +47,7 @@ build-apache24: ## Build Apache 2.4 latest image and tag as :latest
 	$(DOCKER_BUILD_INIT) "apache24" "$(ROOT_DIR)/httpd/apache24/Dockerfile"
 
 
-build-all-php: build-php81 build-php82 build-php83 ## Build all latest php images and tag as :latest (not EOL)
+build-all-php: build-php81 build-php82 build-php83 build-php84 ## Build all latest php images and tag as :latest (not EOL)
 
 build-php81: ## Build latest PHP8.1 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "php81" "$(ROOT_DIR)/php/Dockerfile"
@@ -57,6 +57,9 @@ build-php82: ## Build latest PHP8.2 image and tag as :latest
 
 build-php83: ## Build latest PHP8.3 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "php83" "$(ROOT_DIR)/php/Dockerfile"
+
+build-php84: ## Build latest PHP8.4 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "php84" "$(ROOT_DIR)/php/Dockerfile"
 
 
 build-all-php-eol: build-php56 build-php74 build-php80 ## Build all EOL latest php images and tag as :latest
