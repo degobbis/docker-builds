@@ -61,6 +61,8 @@ RUN install-php-extensions \
         mysqli \
         opcache \
         pdo_mysql \
+        pdo_pgsql \
+        pgsql \
         redis \
         soap \
         sockets \
