@@ -18,9 +18,16 @@ SET_PLATFORM=""
 ## Build the prime image.
 if [ "$ONLY_PUSH_TO_DOCKER" -eq 0 ]; then
 	if [ "$MULTI_PLATFORMS" -eq 1 ]; then
-		docker buildx create --driver=docker-container --name=build-multi-arch-$IMAGE_BUILD_NAME --use
+	echo "docker buildx create --driver=docker-container --name=build-multi-arch-$IMAGE_BUILD_NAME --use --driver-opt network=host"
+		docker buildx create \
+		--driver=docker-container \
+		--name=build-multi-arch-$IMAGE_BUILD_NAME \
+		--use --driver-opt network=host
 		SET_PLATFORM="--platform=$IMAGE_PLATFORMS --push"
 	fi
+
+	echo "docker buildx build $SET_PLATFORM --network host --file \"$IMAGE_BUILD_DOCKERFILE\" --build-arg MY_TZ=\"$BUILD_TZ\" --build-arg BUILD_DATE=\"$BUILD_DATE\" --build-arg BUILD_BASE_IMAGE=\"$BUILD_BASE_IMAGE\" --build-arg VERSION=\"$IMAGE_VERSION\" --build-arg MAINTAINER=\"$MAINTAINER\" $SET_DOCUMENTATION -t \"$IMAGE_BUILD:latest\" $ROOT_DIR"
+	echo ""
 
 	docker buildx build \
 		$SET_PLATFORM \
