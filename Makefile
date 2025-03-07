@@ -74,9 +74,7 @@ build-php80: ## Build latest PHP8.0 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "php80" "$(ROOT_DIR)/php/Dockerfile"
 
 
-build-all-db: build-mariadb114 build-mariadb1011 build-mariadb106 build-mariadb105 build-mariadb104 build-mysql84 build-mysql83 build-mysql80 ## Build all latest db images and tag as :latest
-
-build-all-db-eol: build-mysql57 ## Build all EOL latest db images and tag as :latest
+build-all-db: build-mariadb114 build-mariadb1011 build-mariadb106 build-mariadb105 build-mysql84 build-mysql83 build-mysql80 ## Build all latest db images and tag as :latest
 
 
 build-all-mysql: build-mysql84 build-mysql83 build-mysql80 ## Build all latest MySQL images and tag as :latest
@@ -99,9 +97,6 @@ build-mysql57: ## Build latest MySQL 5.7 image and tag as :latest
 
 build-all-mariadb: build-mariadb114 build-mariadb1011 build-mariadb106 build-mariadb105 build-mariadb104 ## Build all latest db images and tag as :latest for MariaDB
 
-build-mariadb104: ## Build latest MariaDB 10.4 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "mariadb104" "$(ROOT_DIR)/db/mariadb/Dockerfile"
-
 build-mariadb105: ## Build latest MariaDB 10.5 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mariadb105" "$(ROOT_DIR)/db/mariadb/Dockerfile"
 
@@ -115,10 +110,17 @@ build-mariadb114: ## Build latest MariaDB 11.4 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mariadb114" "$(ROOT_DIR)/db/mariadb/Dockerfile"
 
 
+build-all-mariadb-eol: build-mariadb104 ## Build all EOL latest MariaDB images and tag as :latest
+
+build-mariadb104: ## Build latest MariaDB 10.4 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mariadb104" "$(ROOT_DIR)/db/mariadb/Dockerfile"
+
+
 build-mhs: ## Build mhsendmail for several architectur
 	docker buildx create --driver=docker-container --name=build-multi-arch-mhs --use
 	docker buildx build --platform="linux/386,linux/amd64,linux/arm,linux/arm64" --output type=local,dest=./shared/mhsendmail/ --file "$(ROOT_DIR)/mhsendmail/Dockerfile" --build-arg VERSION="1.22" .
 	docker buildx rm build-multi-arch-mhs
+
 clear-build-cache: ## Clears the docker buildx cache
 	docker buildx rm --all-inactive --force
 	docker buildx prune -f
