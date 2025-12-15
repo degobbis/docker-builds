@@ -17,7 +17,7 @@ if [ -d "${PHP_INI_DIR}" ]; then
 
     echo "date.timezone=${TZ:-UTC}" >${PHP_INI_DIR}/conf.d/user-date-time.ini
 
-    if test $PHP_MAJMIN_VERSION -lt 800; then
+    if test $PHP_MAJMIN_VERSION -lt 704; then
         echo "xdebug.remote_host=${XDEBUG_REMOTE_HOST_IP}" >${PHP_INI_DIR}/conf.d/user-xdebug-remote-host.ini
     else
         echo "xdebug.client_host=${XDEBUG_REMOTE_HOST_IP}" >${PHP_INI_DIR}/conf.d/user-xdebug-remote-host.ini
