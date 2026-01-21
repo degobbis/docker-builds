@@ -29,7 +29,7 @@ help:
 .PHONY: build-all build-all-db build-all-php build-all-php-eol build-all-httpd build-all-mariadb build-all-mysql \
 		build-bind build-minica build-apache24 \
 		build-php56 build-php74 build-php80 build-php81 build-php82 build-php83 build-php84 build-php85 \
-		build-mariadb104 build-mariadb105 build-mariadb106 build-mariadb1011 build-mariadb114 \
+		build-mariadb104 build-mariadb105 build-mariadb106 build-mariadb1011 build-mariadb114 build-mariadb118 \
 		build-mysql57 build-mysql80 build-mysql83 build-mysql84 build-mysql93 build-mysql94 build-mysql95 \
 		build-mhs \
 		clear-build-cache
@@ -78,10 +78,10 @@ build-php80: ## Build latest PHP8.0 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "php80" "$(ROOT_DIR)/php/Dockerfile"
 
 
-build-all-db: build-mariadb105 build-mariadb106 build-mariadb1011 build-mariadb114 build-mysql80 build-mysql84 build-mysql93 build-mysql94 build-mysql95 ## Build all latest db images and tag as :latest
+build-all-db: build-mariadb1011 build-mariadb114 build-mariadb118 build-mysql80 build-mysql84 build-mysql95 ## Build all latest db images and tag as :latest
 
 
-build-all-mysql: build-mysql80 build-mysql84 build-mysql93 build-mysql94 build-mysql95 ## Build all latest MySQL images and tag as :latest
+build-all-mysql: build-mysql80 build-mysql84 build-mysql95 ## Build all latest MySQL images and tag as :latest
 
 build-mysql80: ## Build latest MySQL 8.0 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mysql80" "$(ROOT_DIR)/db/mysql80/Dockerfile"
@@ -89,17 +89,11 @@ build-mysql80: ## Build latest MySQL 8.0 image and tag as :latest
 build-mysql84: ## Build latest MySQL 8.4 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mysql84" "$(ROOT_DIR)/db/mysql/Dockerfile"
 
-build-mysql93: ## Build latest MySQL 9.3 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "mysql93" "$(ROOT_DIR)/db/mysql/Dockerfile"
-
-build-mysql94: ## Build latest MySQL 9.4 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "mysql94" "$(ROOT_DIR)/db/mysql/Dockerfile"
-
 build-mysql95: ## Build latest MySQL 9.5 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mysql95" "$(ROOT_DIR)/db/mysql/Dockerfile"
 
 
-build-all-mysql-eol: build-mysql57 build-mysql83 ## Build all EOL latest MySQL images and tag as :latest
+build-all-mysql-eol: build-mysql57 build-mysql83 build-mysql93 build-mysql94 ## Build all EOL latest MySQL images and tag as :latest
 
 build-mysql57: ## Build latest MySQL 5.7 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mysql57" "$(ROOT_DIR)/db/mysql57/Dockerfile"
@@ -107,14 +101,14 @@ build-mysql57: ## Build latest MySQL 5.7 image and tag as :latest
 build-mysql83: ## Build latest MySQL 8.3 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mysql83" "$(ROOT_DIR)/db/mysql/Dockerfile"
 
+build-mysql93: ## Build latest MySQL 9.3 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mysql93" "$(ROOT_DIR)/db/mysql/Dockerfile"
 
-build-all-mariadb: build-mariadb105 build-mariadb106 build-mariadb1011 build-mariadb114 ## Build all latest db images and tag as :latest for MariaDB
+build-mysql94: ## Build latest MySQL 9.4 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mysql94" "$(ROOT_DIR)/db/mysql/Dockerfile"
 
-build-mariadb105: ## Build latest MariaDB 10.5 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "mariadb105" "$(ROOT_DIR)/db/mariadb/Dockerfile"
 
-build-mariadb106: ## Build latest MariaDB 10.6 image and tag as :latest
-	$(DOCKER_BUILD_INIT) "mariadb106" "$(ROOT_DIR)/db/mariadb/Dockerfile"
+build-all-mariadb: build-mariadb106 build-mariadb1011 build-mariadb114 build-mariadb118 ## Build all latest db images and tag as :latest for MariaDB
 
 build-mariadb1011: ## Build latest MariaDB 10.11 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mariadb1011" "$(ROOT_DIR)/db/mariadb/Dockerfile"
@@ -122,11 +116,20 @@ build-mariadb1011: ## Build latest MariaDB 10.11 image and tag as :latest
 build-mariadb114: ## Build latest MariaDB 11.4 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mariadb114" "$(ROOT_DIR)/db/mariadb/Dockerfile"
 
+build-mariadb118: ## Build latest MariaDB 11.8 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mariadb118" "$(ROOT_DIR)/db/mariadb/Dockerfile"
 
-build-all-mariadb-eol: build-mariadb104 ## Build all EOL latest MariaDB images and tag as :latest
+
+build-all-mariadb-eol: build-mariadb104 build-mariadb105 build-mariadb106 ## Build all EOL latest MariaDB images and tag as :latest
 
 build-mariadb104: ## Build latest MariaDB 10.4 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mariadb104" "$(ROOT_DIR)/db/mariadb/Dockerfile"
+
+build-mariadb105: ## Build latest MariaDB 10.5 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mariadb105" "$(ROOT_DIR)/db/mariadb/Dockerfile"
+
+build-mariadb106: ## Build latest MariaDB 10.6 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mariadb106" "$(ROOT_DIR)/db/mariadb/Dockerfile"
 
 
 build-mhs: ## Build mhsendmail for several architectur
