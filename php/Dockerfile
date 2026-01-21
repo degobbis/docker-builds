@@ -4,6 +4,7 @@ ARG TAG="$VERSION-fpm-alpine"
 FROM php:$TAG
 
 ARG TARGETARCH
+ARG INST_PHP_EXT
 ARG VERSION="0.0.0"
 ARG MAINTAINER="Guido De Gobbis"
 ARG BUILD_DATE="1970-01-01T00:00:00UTC"
@@ -34,29 +35,7 @@ RUN set -eu; \
     chmod +x /httpd-php-entrypoint && \
     chmod +x /usr/local/bin/*
 
-RUN install-php-extensions \
-        bcmath \
-        bz2 \
-        calendar \
-        exif \
-        gd \
-        gettext \
-        gmp \
-        imap \
-        intl \
-        ldap \
-        mysqli \
-        opcache \
-        pdo_mysql \
-        pdo_pgsql \
-        pgsql \
-        redis \
-        soap \
-        sockets \
-        xdebug \
-        xmlrpc \
-        xsl \
-        zip
+RUN install-php-extensions $INST_PHP_EXT
 
 RUN rm -rf /var/cache/apk/*
 

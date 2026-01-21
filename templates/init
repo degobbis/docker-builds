@@ -61,8 +61,17 @@ echo "[---] Set IMAGE_VERSION to $IMAGE_VERSION"
 declare -n BUILD_BASE_IMAGE="${IMAGE_BUILD_NAME^^}_BUILD_BASE"
 if [ -z "$BUILD_BASE_IMAGE" ]; then
 	echo "[xxx] ${IMAGE_BUILD_NAME^^}_BUILD_BASE is empty!"
+else
+	echo "[---] Set BUILD_BASE_IMAGE to $BUILD_BASE_IMAGE"
 fi
-echo "[---] Set BUILD_BASE_IMAGE to $BUILD_BASE_IMAGE"
+
+
+declare -n BUILD_PHP_EXTENSIONS="${IMAGE_BUILD_NAME^^}_MODULES"
+if [ -z "$BUILD_PHP_EXTENSIONS" ]; then
+	echo "[xxx] ${IMAGE_BUILD_NAME^^}_MODULES is empty!"
+else
+	echo "[---] Set BUILD_PHP_EXTENSIONS to $BUILD_PHP_EXTENSIONS"
+fi
 
 
 source $ROOT_DIR/templates/build

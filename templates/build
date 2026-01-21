@@ -38,6 +38,7 @@ if [ "$ONLY_PUSH_TO_DOCKER" -eq 0 ]; then
 		--build-arg BUILD_BASE_IMAGE="$BUILD_BASE_IMAGE" \
 		--build-arg VERSION="$IMAGE_VERSION" \
 		--build-arg MAINTAINER="$MAINTAINER" \
+		--build-arg INST_PHP_EXT="$BUILD_PHP_EXTENSIONS" \
 		$SET_DOCUMENTATION \
 		-t "$IMAGE_BUILD:latest" \
 		$ROOT_DIR
