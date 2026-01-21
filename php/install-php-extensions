@@ -21,7 +21,7 @@ if ! which docker-php-ext-configure >/dev/null || ! which docker-php-ext-enable 
 	exit 1
 fi
 
-IPE_VERSION=2.9.18
+IPE_VERSION=2.9.27
 
 StandWithUkraine() {
 	if test -t 1 && ! grep -Eq '^VERSION=.*jessie' /etc/os-release; then
@@ -62,7 +62,7 @@ fi
 
 # Reset the Internal Field Separator
 resetIFS() {
-	IFS='	 
+	IFS='
 '
 }
 
@@ -671,8 +671,8 @@ expandASpellDictionaries() {
 #   $@: the PHP module handles
 #
 # Set:
-#   PACKAGES_PERSISTENT_NEW the list of packages required at runtume that must be installed
-#   PACKAGES_PERSISTENT_PRE the list of packages required at runtume that are already installed
+#   PACKAGES_PERSISTENT_NEW the list of packages required at runtime that must be installed
+#   PACKAGES_PERSISTENT_PRE the list of packages required at runtime that are already installed
 #   PACKAGES_VOLATILE the list of packages required at compile time that must be installed
 #   PACKAGES_PREVIOUS the list of packages (with their version) that are installed right now (calculated only on Debian and only if PACKAGES_PERSISTENT_NEW or PACKAGES_VOLATILE are not empty)
 #   COMPILE_LIBS
@@ -1464,6 +1464,10 @@ buildRequiredPackageLists() {
 					buildRequiredPackageLists_volatile="$buildRequiredPackageLists_volatile gnupg apt-transport-https"
 				fi
 				;;
+			pdo_snowflake@debian)
+				buildRequiredPackageLists_persistent="$buildRequiredPackageLists_persistent libstdc++6 libcurl4"
+				buildRequiredPackageLists_volatile="$buildRequiredPackageLists_volatile cmake g++ $buildRequiredPackageLists_libssldev libcurl4-openssl-dev"
+				;;
 			ssh2@alpine)
 				buildRequiredPackageLists_persistent="$buildRequiredPackageLists_persistent libssh2"
 				buildRequiredPackageLists_volatile="$buildRequiredPackageLists_volatile libssh2-dev"
@@ -1783,8 +1787,8 @@ expandPackagesToBeInstalled() {
 			IFS='
 '
 			for expandPackagesToBeInstalled_line in $expandPackagesToBeInstalled_log; do
-				if test -n "$(printf '%s' "$expandPackagesToBeInstalled_line" | grep -E '^\([0-9]*/[0-9]*) Installing ')"; then
-					expandPackagesToBeInstalled_result="$expandPackagesToBeInstalled_result $(printf '%s' "$expandPackagesToBeInstalled_line" | cut -d ' ' -f 3)"
+				if test -n "$(printf '%s' "$expandPackagesToBeInstalled_line" | grep -E '^\( *[0-9]*/[0-9]*) Installing ')"; then
+					expandPackagesToBeInstalled_result="$expandPackagesToBeInstalled_result $(printf '%s' "$expandPackagesToBeInstalled_line" | sed -E 's/^\(.+\) Installing //' | cut -d ' ' -f 1)"
 				fi
 			done
 			resetIFS
@@ -1924,7 +1928,7 @@ getModuleFullPath() {
 #   $1: the name of the PHP extension
 #
 # Return:
-#   0 (true): if suceeded
+#   0 (true): if succeeded
 #   non-zero (false): in case of errors
 postProcessModule() {
 	postProcessModule_file="$(getModuleFullPath "$1")"
@@ -2235,7 +2239,7 @@ installMicrosoftSqlServerODBC() {
 		alpine)
 			rm -rf /tmp/src/msodbcsql.apk
 			if test $PHP_MAJMIN_VERSION -le 703; then
-				curl -sSLf -o /tmp/src/msodbcsql.apk https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.10.6.1-1_amd64.apk
+				installMicrosoftSqlServerODBC_url=https://download.microsoft.com/download/e/4/e/e4e67866-dffd-428c-aac7-8d28ddafb39b/msodbcsql17_17.10.6.1-1_amd64.apk
 			else
 				case $(uname -m) in
 					aarch64 | arm64 | armv8)
@@ -2245,19 +2249,22 @@ installMicrosoftSqlServerODBC() {
 						installMicrosoftSqlServerODBC_arch=amd64
 						;;
 				esac
-				curl -sSLf -o /tmp/src/msodbcsql.apk https://download.microsoft.com/download/3/5/5/355d7943-a338-41a7-858d-53b259ea33f5/msodbcsql18_18.3.3.1-1_$installMicrosoftSqlServerODBC_arch.apk
+				installMicrosoftSqlServerODBC_url=https://download.microsoft.com/download/9dcab408-e0d4-4571-a81a-5a0951e3445f/msodbcsql18_18.6.1.1-1_$installMicrosoftSqlServerODBC_arch.apk
 			fi
+			printf 'APK package URL: %s\n' "$installMicrosoftSqlServerODBC_url"
+			curl -sSLf -o /tmp/src/msodbcsql.apk "$installMicrosoftSqlServerODBC_url"
 			printf '\n' | apk add --allow-untrusted /tmp/src/msodbcsql.apk
 			rm -rf /tmp/src/msodbcsql.apk
 			;;
 		debian)
 			printf -- '- installing the Microsoft APT key\n'
-			if test $DISTRO_VERSION_NUMBER -eq 11; then
-				curl -sSLf -o /etc/apt/trusted.gpg.d/microsoft.asc https://packages.microsoft.com/keys/microsoft.asc
+			if test $DISTRO_VERSION_NUMBER -ge 13; then
+				curl https://packages.microsoft.com/keys/microsoft-2025.asc | gpg --dearmor --yes --output /usr/share/keyrings/microsoft-prod.gpg
 			elif test $DISTRO_VERSION_NUMBER -ge 12; then
 				curl https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor --yes --output /usr/share/keyrings/microsoft-prod.gpg
+			elif test $DISTRO_VERSION_NUMBER -ge 11; then
+				curl -sSLf -o /etc/apt/trusted.gpg.d/microsoft.asc https://packages.microsoft.com/keys/microsoft.asc
 			else
-				# apt-key is deprecated
 				curl -sSLf https://packages.microsoft.com/keys/microsoft.asc | apt-key add -
 			fi
 			if ! test -f /etc/apt/sources.list.d/mssql-release.list; then
@@ -2497,7 +2504,7 @@ isFirebirdInstalled() {
 installFirebird() {
 	printf 'Installing firebird\n'
 	if test $PHP_MAJMIN_VERSION -ge 804; then
-		installFirebird_src="$(getPackageSource https://github.com/FirebirdSQL/firebird/releases/download/v5.0.2/Firebird-5.0.2.1613-0-source.tar.xz)"
+		installFirebird_src="$(getPackageSource https://github.com/FirebirdSQL/firebird/releases/download/v5.0.3/Firebird-5.0.3.1683-0-source.tar.xz)"
 		cd -- "$installFirebird_src"
 		./configure --enable-client-only
 		make -j$(getProcessorCount)
@@ -2509,8 +2516,13 @@ installFirebird() {
 		cd /tmp/src/firebird
 		# Patch rwlock.h (this has been fixed in later release of firebird 3.x)
 		sed -i '194s/.*/#if 0/' src/common/classes/rwlock.h
-		./configure --with-system-icu
-		# -j option can't be used: make targets must be compiled sequentially
+		if [ "$DISTRO" = alpine ] && [ "$DISTRO_MAJMIN_VERSION" -ge 322 ]; then
+			# Firebird 2.5.x does not support recent ICU versions
+			./configure
+		else
+			./configure --with-system-icu
+		fi
+		# Don't try to enable parallel build: Firebird forces -j1
 		make -s btyacc_binary gpre_boot libfbstatic libfbclient
 		cp gen/firebird/lib/libfbclient.so /usr/lib/
 		ln -s /usr/lib/libfbclient.so /usr/lib/libfbclient.so.2
@@ -2530,7 +2542,7 @@ installLibXCrypt() {
 	installLibXCrypt_version=4.4.36
 	installLibXCrypt_src="$(getPackageSource "https://github.com/besser82/libxcrypt/releases/download/v$installLibXCrypt_version/libxcrypt-$installLibXCrypt_version.tar.xz")"
 	cd -- "$installLibXCrypt_src"
-	./configure --prefix /usr
+	./configure --prefix /usr --disable-werror
 	make -j$(getProcessorCount)
 	make install
 	cd - >/dev/null
@@ -2917,7 +2929,7 @@ installBundledModule() {
 +  PHP_DBA_DB_CHECK(4, db-5.3 db-5.1 db-5.0 db-4.8 db-4.7 db-4.6 db-4.5 db-4.4 db-4.3 db-4.2 db-4.1 db-4.0 db-4 db4 db, [(void)db_create((DB**)0, (DB_ENV*)0, 0)])
  fi
  PHP_DBA_STD_RESULT(db4,Berkeley DB4)
- 
+
 EOF
 			fi
 			docker-php-ext-configure dba --with-db4
@@ -3003,7 +3015,7 @@ EOF
 						patch /usr/src/php/ext/intl/config.m4 <<'EOF'
 @@ -85,7 +85,16 @@ if test "$PHP_INTL" != "no"; then
      breakiterator/codepointiterator_methods.cpp"
- 
+
    PHP_REQUIRE_CXX()
 -  PHP_CXX_COMPILE_STDCXX(11, mandatory, PHP_INTL_STDCXX)
 +
@@ -3250,6 +3262,16 @@ installRemoteModule() {
 			cd - >/dev/null
 			installRemoteModule_manuallyInstalled=1
 			installRemoteModule_ini_extra="$(printf '%sblackfire.agent_socket=tcp://blackfire:8307\n' "$installRemoteModule_ini_extra")"
+			;;
+		brotli)
+			if test -z "$installRemoteModule_version"; then
+				case "$DISTRO_VERSION" in
+					debian@8)
+						# In Debian Jessie we have brotli version 0.18.2
+						installRemoteModule_version=0.18.2
+						;;
+				esac
+			fi
 			;;
 		cassandra)
 			installRemoteModule_src="$(getPackageSource https://github.com/nano-interactive/ext-cassandra/tarball/1cf12c5ce49ed43a2c449bee4b7b23ce02a37bf0)"
@@ -4246,7 +4268,7 @@ installRemoteModule() {
 					elif test $PHP_MAJMIN_VERSION -le 801; then
 						installRemoteModule_version=0.10.0
 					else
-						installRemoteModule_version=0.11.0
+						installRemoteModule_version=0.13.0
 					fi
 				fi
 				installRemoteModule_src="$(getPackageSource https://codeload.github.com/jvoisin/snuffleupagus/tar.gz/v$installRemoteModule_version)"
@@ -4326,6 +4348,31 @@ installRemoteModule() {
 					installRemoteModule_version=5.11.1
 				fi
 			fi
+			;;
+		pdo_snowflake)
+			if test -z "$installRemoteModule_version"; then
+				installRemoteModule_version="$(curl -sSLf https://api.github.com/repos/snowflakedb/pdo_snowflake/releases/latest 2>/dev/null | grep -o '"tag_name": *"[^"]*"' | head -1 | sed 's/.*"v*\([^"]*\)".*/\1/')"
+				if test -z "$installRemoteModule_version"; then
+					printf 'Failed to detect pdo_snowflake version\n' >&2
+					exit 1
+				fi
+			fi
+			printf 'Downloading pdo_snowflake v%s source code (this may take a while)... ' "$installRemoteModule_version"
+			installRemoteModule_src="$(getPackageSource "https://codeload.github.com/snowflakedb/pdo_snowflake/tar.gz/v${installRemoteModule_version}")"
+			echo 'done.'
+			cd "$installRemoteModule_src"
+			chmod +x scripts/build_pdo_snowflake.sh
+			PHP_HOME="$(php-config --prefix)" ./scripts/build_pdo_snowflake.sh
+			cp modules/pdo_snowflake.so "$PHP_EXTDIR/pdo_snowflake.so"
+			if test -f libsnowflakeclient/cacert.pem; then
+				installRemoteModule_cacert_path="/usr/local/share/snowflake/cacert.pem"
+				mkdir -p "$(dirname "$installRemoteModule_cacert_path")"
+				cp libsnowflakeclient/cacert.pem "$installRemoteModule_cacert_path"
+				installRemoteModule_ini_extra="pdo_snowflake.cacert=$installRemoteModule_cacert_path"
+			fi
+			cd - >/dev/null
+			rm -rf "$installRemoteModule_src"
+			installRemoteModule_manuallyInstalled=1
 			;;
 		ssh2)
 			if test -z "$installRemoteModule_version"; then
@@ -4852,6 +4899,10 @@ installRemoteModule() {
 					installRemoteModule_version=2.9.8
 				elif test $PHP_MAJMIN_VERSION -le 704; then
 					installRemoteModule_version=3.1.6
+				elif test $PHP_MAJMIN_VERSION -le 800; then
+					installRemoteModule_version=3.4.7
+				elif test $PHP_MAJMIN_VERSION -le 805; then
+					installRemoteModule_version=3.5.0
 				fi
 			fi
 			;;
