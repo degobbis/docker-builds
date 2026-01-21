@@ -34,19 +34,6 @@ RUN set -eu; \
     chmod +x /httpd-php-entrypoint && \
     chmod +x /usr/local/bin/*
 
-ENV PHPIZE_DEPS="\
-        autoconf \
-        coreutils \
-        dpkg-dev dpkg \
-        file \
-        g++ \
-        gcc \
-        libc-dev \
-        linux-headers \
-        make \
-        pkgconf \
-        re2c"
-
 RUN install-php-extensions \
         bcmath \
         bz2 \
