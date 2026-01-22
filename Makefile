@@ -30,7 +30,7 @@ help:
 		build-bind build-minica build-apache24 \
 		build-php56 build-php74 build-php80 build-php81 build-php82 build-php83 build-php84 build-php85 \
 		build-mariadb104 build-mariadb105 build-mariadb106 build-mariadb1011 build-mariadb114 build-mariadb118 \
-		build-mysql57 build-mysql80 build-mysql83 build-mysql84 build-mysql93 build-mysql94 build-mysql95 \
+		build-mysql57 build-mysql80 build-mysql83 build-mysql84 build-mysql93 build-mysql94 build-mysql95 build-mysql96 \
 		build-mhs \
 		clear-build-cache
 
@@ -78,10 +78,10 @@ build-php80: ## Build latest PHP8.0 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "php80" "$(ROOT_DIR)/php/Dockerfile"
 
 
-build-all-db: build-mariadb1011 build-mariadb114 build-mariadb118 build-mysql80 build-mysql84 build-mysql95 ## Build all latest db images and tag as :latest
+build-all-db: build-mariadb1011 build-mariadb114 build-mariadb118 build-mysql80 build-mysql84 build-mysql95 build-mysql96 ## Build all latest db images and tag as :latest
 
 
-build-all-mysql: build-mysql80 build-mysql84 build-mysql95 ## Build all latest MySQL images and tag as :latest
+build-all-mysql: build-mysql80 build-mysql84 build-mysql95 build-mysql96 ## Build all latest MySQL images and tag as :latest
 
 build-mysql80: ## Build latest MySQL 8.0 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mysql80" "$(ROOT_DIR)/db/mysql80/Dockerfile"
@@ -91,6 +91,9 @@ build-mysql84: ## Build latest MySQL 8.4 image and tag as :latest
 
 build-mysql95: ## Build latest MySQL 9.5 image and tag as :latest
 	$(DOCKER_BUILD_INIT) "mysql95" "$(ROOT_DIR)/db/mysql/Dockerfile"
+
+build-mysql96: ## Build latest MySQL 9.6 image and tag as :latest
+	$(DOCKER_BUILD_INIT) "mysql96" "$(ROOT_DIR)/db/mysql/Dockerfile"
 
 
 build-all-mysql-eol: build-mysql57 build-mysql83 build-mysql93 build-mysql94 ## Build all EOL latest MySQL images and tag as :latest
