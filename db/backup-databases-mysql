@@ -19,6 +19,22 @@ if [ -z "$mysql_options" ]; then
     mysql_options='--protocol=socket --user=root --host=localhost --socket=/var/run/mysqld/mysqld.sock --comments'
 fi
 
+# Define default
+MYSQLDUMP_OPTIONS=""
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --set-gtid-purged=*)
+      # Set the OPTARG
+      MYSQLDUMP_OPTIONS=" $1"
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
 _mysql_passfile() {
 	# echo the password to the "file" the client uses
 	# the client command will use process substitution to create a file on the fly
@@ -76,7 +92,7 @@ do
     fi
 
     # Save database
-    mysqldump --defaults-extra-file=<( _mysql_passfile ) --complete-insert --routines --triggers --single-transaction $mysql_options $dbname > /docker-entrypoint-initdb.d/$dbname.sql && echo "-> Database '$dbname' saved."
+    mysqldump --defaults-extra-file=<( _mysql_passfile ) --complete-insert --routines --triggers --single-transaction $mysql_options$MYSQLDUMP_OPTIONS $dbname > /docker-entrypoint-initdb.d/$dbname.sql && echo "-> Database '$dbname' saved."
 
     # Archive a copy if enabled
     [ "$ARCHIVE_DB" -eq 1 ] && cp /docker-entrypoint-initdb.d/${dbname}.sql /docker-entrypoint-initdb.d/$DATABASE_ARCHIVE_FOLDER/${dbname}.sql && echo "-> Database '$dbname' archived into '$DATABASE_ARCHIVE_FOLDER'."
