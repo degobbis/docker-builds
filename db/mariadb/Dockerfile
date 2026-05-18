@@ -16,37 +16,43 @@ LABEL org.opencontainers.image.authors="$MAINTAINER" \
       org.opencontainers.image.version="$VERSION"
 
 COPY ./shared/aliases.sh /etc/profile.d/
-
-RUN set -eu; \
-    apk add --no-cache ca-certificates tzdata shadow mariadb mariadb-client mariadb-server-utils; \
-    apk upgrade --update; \
-    ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
-    mkdir /docker-entrypoint-initdb.d; \
-    rm -rf /var/cache/apk/*
-
-# comment out a few problematic configuration values
-RUN sed -Ei 's/^(bind-address|log)/#&/' /etc/my.cnf && \
-    sed -i  's/^skip-networking/#&/' /etc/my.cnf.d/mariadb-server.cnf && \
-    # don't reverse lookup hostnames, they are usually another container
-    sed -i '/^\[mysqld]$/a skip-host-cache\nskip-name-resolve' /etc/my.cnf && \
-    # always run as user mysql
-    sed -i '/^\[mysqld]$/a user=mysql' /etc/my.cnf && \
-    # allow custom configurations
-    echo -e '\n!includedir /etc/mysql/conf.d/' >> /etc/my.cnf && \
-    mkdir -p /etc/mysql/conf.d/
-
-VOLUME /var/lib/mysql
-
 COPY ./db/docker-entrypoint-mariadb /docker-entrypoint
 COPY ./db/backup-databases-mariadb /usr/local/bin/backup-databases
 COPY ./db/restore-databases-mariadb /usr/local/bin/restore-databases
 COPY ./shared/create_user /usr/local/bin/
 
 RUN set -eu; \
-    chmod +x /docker-entrypoint && \
-    chmod +x /usr/local/bin/*
+    chmod +x /docker-entrypoint; \
+    chmod +x /usr/local/bin/* ; \
+    apk upgrade --update --no-cache; \
+    apk add --no-cache \
+        ca-certificates \
+        tzdata \
+        shadow \
+        mariadb \
+        mariadb-client \
+        mariadb-server-utils; \
+    ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
+    mkdir /docker-entrypoint-initdb.d; \
+    rm -rf /var/cache/apk/* ; \
+    \
+    # comment out a few problematic configuration values
+    sed -Ei 's/^(bind-address|log)/#&/' /etc/my.cnf; \
+    sed -i  's/^skip-networking/#&/' /etc/my.cnf.d/mariadb-server.cnf; \
+    \
+    # don't reverse lookup hostnames, they are usually another container
+    sed -i '/^\[mysqld]$/a skip-host-cache\nskip-name-resolve' /etc/my.cnf; \
+    \
+    # always run as user mysql
+    sed -i '/^\[mysqld]$/a user=mysql' /etc/my.cnf; \
+    \
+    # allow custom configurations
+    echo -e '\n!includedir /etc/mysql/conf.d/' >> /etc/my.cnf; \
+    mkdir -p /etc/mysql/conf.d/
 
-STOPSIGNAL "SIGQUIT"
-EXPOSE "3306"
+VOLUME /var/lib/mysql
+
+STOPSIGNAL SIGQUIT
+EXPOSE 3306
 ENTRYPOINT ["/docker-entrypoint"]
 CMD ["mariadbd-safe"]

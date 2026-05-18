@@ -15,8 +15,6 @@ LABEL org.opencontainers.image.authors="$MAINTAINER" \
       org.opencontainers.image.documentation="$DOCUMENTATION" \
       org.opencontainers.image.version="$VERSION"
 
-VOLUME /var/lib/mysql
-
 COPY ./shared/aliases.sh /root/.bashrc
 COPY ./db/docker-entrypoint-mysql /docker-entrypoint
 COPY ./db/backup-databases-mysql /usr/local/bin/backup-databases
@@ -27,8 +25,9 @@ RUN set -eu; \
     chmod +x /docker-entrypoint; \
     chmod +x /usr/local/bin/*
 
-#STOPSIGNAL "SIGQUIT"
-EXPOSE "3306"
+VOLUME /var/lib/mysql
+
+STOPSIGNAL SIGQUIT
+EXPOSE 3306
 ENTRYPOINT ["/docker-entrypoint"]
-#CMD ["mysqld"]
 CMD ["mysqld", "--character-set-server=utf8mb4", "--collation-server=utf8mb4_unicode_ci", "--skip-character-set-client-handshake"]

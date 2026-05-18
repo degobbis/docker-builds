@@ -17,23 +17,20 @@ LABEL org.opencontainers.image.authors="$MAINTAINER" \
       org.opencontainers.image.version="$VERSION"
 
 COPY ./shared/aliases.sh /etc/profile.d/
-
-RUN set -eu; \
-    apk add --no-cache tzdata shadow ca-certificates; \
-    apk upgrade --update; \
-    ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
-    rm -rf /var/cache/apk/*
-
 COPY ./httpd/apache24/config/httpd.conf /usr/local/apache2/conf/
 COPY ./shared/httpd-php-entrypoint /
 COPY ./shared/create_user /usr/local/bin/
 
 RUN set -eu; \
-    chmod +x /httpd-php-entrypoint && \
-    chmod +x /usr/local/bin/*
+    chmod +x /httpd-php-entrypoint; \
+    chmod +x /usr/local/bin/* ; \
+    apk upgrade --update --no-cache; \
+    apk add --no-cache tzdata shadow ca-certificates; \
+    ln -sf /usr/share/zoneinfo/$MY_TZ /etc/localtime; \
+    rm -rf /var/cache/apk/*
 
 WORKDIR "/srv/www"
 
-STOPSIGNAL "SIGWINCH"
+STOPSIGNAL SIGWINCH
 ENTRYPOINT ["/httpd-php-entrypoint"]
 CMD ["httpd-foreground"]
