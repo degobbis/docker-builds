@@ -1,0 +1,43 @@
+# .github/workflows/sub_detect-changes.yml
+name: Detect Changes
+
+on:
+  workflow_call:
+    outputs:
+      changedImages:
+        description: 'Space-separated list of changed image names'
+        value: ${{ jobs.detect.outputs.changedImages }}
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    outputs:
+      changedImages: ${{ steps.diff.outputs.changedImages }}
+    steps:
+      - name: Checkout repository with full history
+        uses: actions/checkout@v4
+        with:
+          # Need at least 2 commits to compare before/after
+          fetch-depth: 2
+
+      - name: Diff .env-example against last push
+        id: diff
+        run: |
+          # Compare the current commit against the previous one on this branch
+          git diff HEAD^ HEAD -- .env-example > diff.txt
+
+          # Extract changed variable names matching *_VERSION="..."
+          changedImages=""
+          while IFS= read -r line; do
+            if [[ "$line" =~ ^[+-][A-Z0-9]+_VERSION= ]]; then
+              imageName=$(echo "$line" | sed -E 's/^[+-]([A-Z0-9]+)_VERSION=.*/\1/' | tr '[:upper:]' '[:lower:]')
+              if [[ ! " $changedImages " =~ " $imageName " ]]; then
+                changedImages="$changedImages $imageName"
+              fi
+            fi
+          done < diff.txt
+
+          # Trim leading/trailing whitespace
+          changedImages=$(echo "$changedImages" | xargs)
+
+          echo "changedImages=$changedImages" >> "$GITHUB_OUTPUT"

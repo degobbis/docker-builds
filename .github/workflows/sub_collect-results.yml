@@ -1,0 +1,179 @@
+# .github/workflows/sub_collect-results.yml
+name: Collect Results
+
+on:
+  workflow_call:
+    inputs:
+      onlyPush:
+        description: '1 if this run was a Dockerhub push run, 0 if it was a build run'
+        required: false
+        type: string
+        default: '0'
+
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all result artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: results
+          pattern: result-*
+          merge-multiple: true
+
+      - name: Build summary table and determine overall status
+        id: summary
+        run: |
+          # Determine the human-readable run label based on onlyPush
+          if [ "${{ inputs.onlyPush }}" == "1" ]; then
+            runLabel="Push to Docker Hub"
+          else
+            runLabel="Build Images"
+          fi
+
+          # Convert run label into a GitHub-safe label slug
+          labelSlug=$(echo "$runLabel" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+
+          echo "runLabel=$runLabel" >> "$GITHUB_OUTPUT"
+          echo "labelSlug=$labelSlug" >> "$GITHUB_OUTPUT"
+
+          # Build the markdown table and track overall success
+          echo "| Image | Status |" > summary.md
+          echo "|---|---|" >> summary.md
+
+          overallStatus="success"
+          for resultFile in results/*.txt; do
+            imageName=$(basename "$resultFile" | sed 's/result-//;s/.txt//')
+            status=$(cat "$resultFile")
+            echo "| $imageName | $status |" >> summary.md
+            if [ "$status" == "failure" ]; then
+              overallStatus="failure"
+            fi
+          done
+
+          echo "overallStatus=$overallStatus" >> "$GITHUB_OUTPUT"
+          cat summary.md
+
+      - name: Ensure label exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runLabel = "${{ steps.summary.outputs.runLabel }}";
+            const labelName = "${{ steps.summary.outputs.labelSlug }}";
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: labelName
+              });
+            } catch (error) {
+              // 404 means the label doesn't exist yet, so we create it
+              if (error.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: labelName,
+                  color: "d4c5f9",
+                  description: `Automatisch erstellte Ergebnisse für ${runLabel}`
+                });
+              } else {
+                // Any other error should not be silently ignored
+                throw error;
+              }
+            }
+
+      - name: Find existing open issue with this label
+        id: findIssue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelName = "${{ steps.summary.outputs.labelSlug }}";
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: "open",
+              labels: labelName
+            });
+            const issueNumber = issues.data.length > 0 ? issues.data[0].number : "";
+            core.setOutput("issueNumber", issueNumber);
+
+      - name: Read summary content
+        id: readSummary
+        run: |
+          {
+            echo 'content<<EOF'
+            cat summary.md
+            echo EOF
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Handle failure - create or update issue
+        if: steps.summary.outputs.overallStatus == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelName = "${{ steps.summary.outputs.labelSlug }}";
+            const runLabel = "${{ steps.summary.outputs.runLabel }}";
+            const issueNumber = "${{ steps.findIssue.outputs.issueNumber }}";
+            const body = `## ${runLabel} failed\n\n${{ steps.readSummary.outputs.content }}\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            if (issueNumber) {
+              // Add a comment to the already open issue instead of spamming new issues
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issueNumber),
+                body: body
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `${runLabel} failed`,
+                body: body,
+                labels: [labelName],
+                state: "open"
+              });
+            }
+
+      - name: Handle success - update or create and close issue
+        if: steps.summary.outputs.overallStatus == 'success'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labelName = "${{ steps.summary.outputs.labelSlug }}";
+            const runLabel = "${{ steps.summary.outputs.runLabel }}";
+            const issueNumber = "${{ steps.findIssue.outputs.issueNumber }}";
+            const body = `## ${runLabel} succeeded\n\n${{ steps.readSummary.outputs.content }}\n\nRun: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+
+            if (issueNumber) {
+              // Close the previously open failure issue with a success comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issueNumber),
+                body: body
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: parseInt(issueNumber),
+                state: "closed",
+                state_reason: "completed"
+              });
+            } else {
+              // Create a closed issue as a success log when no open issue exists
+              const createdIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `${runLabel} succeeded`,
+                body: body,
+                labels: [labelName]
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: createdIssue.data.number,
+                state: "closed",
+                state_reason: "completed"
+              });
+            }

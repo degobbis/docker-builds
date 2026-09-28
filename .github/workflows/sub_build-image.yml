@@ -1,0 +1,86 @@
+# .github/workflows/sub_build-php82.yml
+name: Build Image
+
+on:
+  workflow_call:
+    inputs:
+      image:
+        description: 'Image name to build like php85 or mariadb118'
+        required: true
+        type: string
+      onlyPush:
+        description: '1 to only push existing GHCR image to Dockerhub, 0 to build'
+        required: false
+        type: string
+        default: '0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create .env from .env-example
+        run: cp .env-example .env
+
+      - name: Fill repository variables
+        env:
+          DOCKER_HUB_REPOSITORY: ${{ vars.DOCKER_HUB_REPOSITORY }}
+          DOCKER_HUB_REPOSITORY_LOCAL_PREFIX: ${{ vars.DOCKER_HUB_REPOSITORY_LOCAL_PREFIX }}
+        run: |
+          sed -i "s|DOCKER_HUB_REPOSITORY=\"\"|DOCKER_HUB_REPOSITORY=\"${DOCKER_HUB_REPOSITORY}\"|" .env
+          sed -i "s|DOCKER_HUB_REPOSITORY_LOCAL_PREFIX=\"\"|DOCKER_HUB_REPOSITORY_LOCAL_PREFIX=\"${DOCKER_HUB_REPOSITORY_LOCAL_PREFIX}\"|" .env
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Only login to Dockerhub when we are actually pushing there
+      - name: Login to Dockerhub
+        if: ${{ inputs.onlyPush == '1' }}
+        uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKER_HUB_REPOSITORY }}
+          password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+      - name: Build image (multi-platform, push to GHCR only)
+        if: ${{ inputs.onlyPush == '0' }}
+        run: make build-${{ inputs.image }} multi-platforms=1
+
+      - name: Push existing image to Dockerhub
+        if: ${{ inputs.onlyPush == '1' }}
+        uses: nick-invision/retry@v3
+        with:
+          timeout_minutes: 10
+          max_attempts: 3
+          retry_wait_seconds: 30
+          command: make build-${{ inputs.image }} multi-platforms=1 only-push=1
+
+      - name: Record success
+        if: success()
+        run: |
+          mkdir -p results
+          echo "success" > results/result-${{ inputs.image }}.txt
+
+      - name: Record failure
+        if: failure()
+        run: |
+          mkdir -p results
+          echo "failure" > results/result-${{ inputs.image }}.txt
+
+      - name: Upload result artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: result-${{ inputs.image }}
+          path: results/result-${{ inputs.image }}.txt

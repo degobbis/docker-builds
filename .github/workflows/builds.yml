@@ -1,0 +1,115 @@
+# .github/workflows/builds.yml
+name: Builds
+
+on:
+  push:
+    branches:
+      - 2.0.0-dev
+    paths:
+      - '.env-example'
+  workflow_dispatch:
+    inputs:
+      changedImages:
+        description: 'Space-separated list of image names to build (leave empty to auto-detect)'
+        required: false
+        type: string
+        default: ''
+      onlyPush:
+        description: '1 to only push existing GHCR images to Dockerhub, 0 to build'
+        required: false
+        type: string
+        default: '0'
+
+jobs:
+  # Step 1: Determine which images changed, either from input or via diff detection
+  detect-changes:
+    if: ${{ github.event_name == 'push' || inputs.changedImages == '' }}
+    uses: ./.github/workflows/sub_detect-changes.yml
+
+  # Step 2: Merge manual input and detected changes into one final list
+  resolve-images:
+    needs: [detect-changes]
+    if: always()
+    runs-on: ubuntu-latest
+    outputs:
+      changedImages: ${{ steps.resolve.outputs.changedImages }}
+      hasImages: ${{ steps.resolve.outputs.hasImages }}
+      matrixJson: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - name: Resolve final image list
+        id: resolve
+        env:
+          # Pass values as environment variables instead of direct interpolation
+          manualInputRaw: ${{ inputs.changedImages }}
+          detectedRaw: ${{ needs.detect-changes.outputs.changedImages }}
+        run: |
+          manualInput="$manualInputRaw"
+          detected="$detectedRaw"
+
+          if [ -n "$manualInput" ]; then
+            finalList="$manualInput"
+          else
+            finalList="$detected"
+          fi
+
+          finalList=$(echo "$finalList" | xargs)
+          changedImages="$finalList"
+          echo "changedImages=$changedImages" >> "$GITHUB_OUTPUT"
+
+          if [ -z "$finalList" ]; then
+            hasImages=false
+          else
+            hasImages=true
+          fi
+
+          echo "hasImages=$hasImages" >> "$GITHUB_OUTPUT"
+
+          # DEBUG: Print values directly to the visible log
+          echo "### DEBUG resolve step ###"
+          echo "finalList=$finalList"
+          echo "changedImages=$changedImages"
+          echo "hasImages=$hasImages"
+
+      - name: Build matrix JSON from space-separated list
+        id: matrix
+        env:
+          finalListRaw: ${{ steps.resolve.outputs.changedImages }}
+        run: |
+          finalList="$finalListRaw"
+          # Convert "php82 mariadb118" into ["php82","mariadb118"]
+          jsonArray=$(echo "$finalList" | tr ' ' '\n' | jq -R . | jq -sc .)
+          echo "matrix=$jsonArray" >> "$GITHUB_OUTPUT"
+          # DEBUG: Print values directly to the visible log
+          echo "### DEBUG matrix step ###"
+          echo "matrix=$jsonArray"
+
+  # Step 3: Abort cleanly if no images need building
+  no-images-found:
+    needs: [resolve-images]
+    if: always() && needs.resolve-images.outputs.hasImages == 'false'
+    runs-on: ubuntu-latest
+    steps:
+      - name: No changes detected
+        run: echo "No changed images found - nothing to build. Exiting without error."
+
+  # Step 4: Call one build subflow per image via matrix
+  build-images:
+    needs: [resolve-images]
+    if: always() && needs.resolve-images.outputs.hasImages == 'true'
+    strategy:
+      matrix:
+        image: ${{ fromJson(needs.resolve-images.outputs.matrixJson) }}
+      fail-fast: false
+    uses: ./.github/workflows/sub_build-image.yml
+    with:
+      image: ${{ matrix.image }}
+      onlyPush: ${{ inputs.onlyPush || '0' }}
+    secrets: inherit
+
+  # Step 5: Collect all results and manage the summary issue
+  collect-results:
+    needs: [resolve-images, build-images]
+    if: always() && needs.resolve-images.outputs.hasImages == 'true'
+    uses: ./.github/workflows/sub_collect-results.yml
+    with:
+      onlyPush: ${{ inputs.onlyPush || '0' }}
