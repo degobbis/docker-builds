@@ -21,7 +21,7 @@ if ! which docker-php-ext-configure >/dev/null || ! which docker-php-ext-enable 
 	exit 1
 fi
 
-IPE_VERSION=2.12.0
+IPE_VERSION=2.12.3
 
 # The versions of the libraries that we compile/download manually (for recent PHP versions/distros).
 # They can be overridden by setting the environment variables with the same names.
@@ -34,7 +34,7 @@ IPE_LIBVERSION_DAV1D="${IPE_LIBVERSION_DAV1D:-1.5.3}"
 IPE_LIBVERSION_ENCHANT1="${IPE_LIBVERSION_ENCHANT1:-1.6.1}"
 # Firebird version followed by the build number and the package revision (as in the name of the source archive)
 IPE_LIBVERSION_FIREBIRD="${IPE_LIBVERSION_FIREBIRD:-5.0.4.1812-0}"
-IPE_LIBVERSION_GEARMAN="${IPE_LIBVERSION_GEARMAN:-2.1.0}"
+IPE_LIBVERSION_GEARMAN="${IPE_LIBVERSION_GEARMAN:-2.2.0}"
 IPE_LIBVERSION_HATTRIE="${IPE_LIBVERSION_HATTRIE:-0.7.1}"
 IPE_LIBVERSION_IDNKIT="${IPE_LIBVERSION_IDNKIT:-2.3}"
 IPE_LIBVERSION_IONC="${IPE_LIBVERSION_IONC:-1.1.6}"
@@ -54,12 +54,13 @@ IPE_LIBVERSION_ZSTD="${IPE_LIBVERSION_ZSTD:-1.5.7}"
 # The versions of the PHP extensions that we download manually (for recent PHP versions/distros).
 # For internal use only (to test new versions): users should specify the version of the extensions as described in README.md.
 IPE_EXTVERSION_CASSANDRA="${IPE_EXTVERSION_CASSANDRA:-1.5.1}"
-IPE_EXTVERSION_GEOS="${IPE_EXTVERSION_GEOS:-889e2b1d9aa6f82995db4dab6891f48c3bacfb59}"
-IPE_EXTVERSION_LZ4="${IPE_EXTVERSION_LZ4:-0.7.1}"
+IPE_EXTVERSION_GEOS="${IPE_EXTVERSION_GEOS:-1a1c6a95697359892886a2050570007754ce575e}"
+IPE_EXTVERSION_LZ4="${IPE_EXTVERSION_LZ4:-0.8.0}"
 IPE_EXTVERSION_SNAPPY="${IPE_EXTVERSION_SNAPPY:-0.2.3}"
 IPE_EXTVERSION_SNUFFLEUPAGUS="${IPE_EXTVERSION_SNUFFLEUPAGUS:-0.14.0}"
 IPE_EXTVERSION_SPX="${IPE_EXTVERSION_SPX:-0.4.22}"
 IPE_EXTVERSION_V8JS="${IPE_EXTVERSION_V8JS:-8a39efa3cf3b275e402ddf3c4f6b611a5f69a499}"
+IPE_EXTVERSION_YAJL_STREAM="${IPE_EXTVERSION_YAJL_STREAM:-0.1.0}"
 
 StandWithUkraine() {
 	if test -t 1 && ! grep -Eq '^VERSION=.*jessie' /etc/os-release; then
@@ -1858,6 +1859,14 @@ buildRequiredPackageLists() {
 			xsl@debian)
 				buildRequiredPackageLists_persistent="$buildRequiredPackageLists_persistent ^libxslt1\.1$"
 				buildRequiredPackageLists_volatile="$buildRequiredPackageLists_volatile libxslt-dev"
+				;;
+			yajl_stream@alpine)
+				buildRequiredPackageLists_persistent="$buildRequiredPackageLists_persistent yajl"
+				buildRequiredPackageLists_volatile="$buildRequiredPackageLists_volatile yajl-dev"
+				;;
+			yajl_stream@debian)
+				buildRequiredPackageLists_persistent="$buildRequiredPackageLists_persistent libyajl2"
+				buildRequiredPackageLists_volatile="$buildRequiredPackageLists_volatile libyajl-dev"
 				;;
 			yaml@alpine)
 				buildRequiredPackageLists_persistent="$buildRequiredPackageLists_persistent yaml"
@@ -5470,7 +5479,8 @@ installRemoteModule() {
 			else
 				installRemoteModule_version="$(resolvePeclStabilityVersion "$installRemoteModule_module" "$installRemoteModule_version")"
 			fi
-			if test -z "$installRemoteModule_version" || test $(compareVersions "$installRemoteModule_version" 2.2.0) -ge 0; then
+			# Optional serializers exist only in yac 2.2.0 - 2.x (removed in 3.0.0)
+			if test -n "$installRemoteModule_version" && test $(compareVersions "$installRemoteModule_version" 2.2.0) -ge 0 && test $(compareVersions "$installRemoteModule_version" 3.0.0) -lt 0; then
 				# Enable igbinary serializer support
 				if php --ri igbinary >/dev/null 2>/dev/null; then
 					addConfigureOption enable-igbinary yes
@@ -5489,6 +5499,20 @@ installRemoteModule() {
 				else
 					addConfigureOption enable-msgpack no
 				fi
+			fi
+			;;
+		yajl_stream)
+			if test -z "$installRemoteModule_path"; then
+				if test -z "$installRemoteModule_version"; then
+					installRemoteModule_version=$IPE_EXTVERSION_YAJL_STREAM
+				fi
+				installRemoteModule_src="$(getPackageSource https://codeload.github.com/vlydev/php-yajl-stream/tar.gz/v$installRemoteModule_version)"
+				cd -- "$installRemoteModule_src"
+				phpize
+				./configure --with-yajl-stream
+				make -j$(getProcessorCount) install
+				cd - >/dev/null
+				installRemoteModule_manuallyInstalled=1
 			fi
 			;;
 		yaml)
@@ -5611,7 +5635,7 @@ moduleMayUsePecl() {
 		@composer | @fix_letsencrypt)
 			return 1
 			;;
-		blackfire | geos | ioncube_loader | snuffleupagus | sourceguardian | spx | tdlib | tideways)
+		blackfire | geos | ioncube_loader | snuffleupagus | sourceguardian | spx | tdlib | tideways | yajl_stream)
 			return 1
 			;;
 	esac
